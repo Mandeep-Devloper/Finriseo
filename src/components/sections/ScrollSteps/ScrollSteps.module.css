@@ -1,0 +1,180 @@
+.scrollSection {
+  height: 300vh;
+  position: relative;
+  background-color: var(--white);
+  padding-top: 100px;
+  scroll-margin-top: 100px;
+}
+
+.stickyContainer {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.innerContainer {
+  width: 100%;
+  padding-top: var(--sp-16, 4rem);
+  padding-bottom: var(--sp-16, 4rem);
+}
+
+.header {
+  text-align: left;
+  margin-bottom: var(--sp-12, 3rem);
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-12, 3rem);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-16, 4rem);
+  }
+}
+
+.leftColumn {
+  position: relative;
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12, 3rem);
+  position: relative;
+}
+
+.stepItem {
+  display: flex;
+  gap: var(--sp-6, 1.5rem);
+  position: relative;
+  z-index: 1;
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+.stepItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 48px;
+  left: 23px;
+  bottom: calc(-1 * var(--sp-12, 3rem));
+  width: 2px;
+  background-color: var(--gray-200);
+  z-index: -1;
+}
+
+.stepItem.active, .stepItem.past {
+  opacity: 1;
+}
+
+.stepIndicator {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--white);
+  border: 2px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.4s ease;
+  box-shadow: 0 0 0 8px var(--white);
+}
+
+.active .stepIndicator {
+  border-color: var(--green-700);
+  background-color: var(--green-700);
+}
+
+.past .stepIndicator {
+  border-color: var(--green-700);
+  background-color: var(--white);
+}
+
+.stepNumber {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: var(--text-lg, 1.125rem);
+  color: var(--gray-400);
+  transition: color 0.4s ease;
+}
+
+.active .stepNumber {
+  color: var(--white);
+}
+
+.past .stepNumber {
+  color: var(--green-700);
+}
+
+.stepText {
+  padding-top: var(--sp-2, 0.5rem);
+}
+
+.stepTitle {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: var(--sp-2, 0.5rem);
+}
+
+.stepDesc {
+  font-size: var(--text-base, 1rem);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.rightColumn {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: min(420px, 52vh);
+}
+
+.visualStage {
+  width: 100%;
+  max-width: min(580px, 46vw);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  will-change: transform, opacity;
+}
+
+.visualStageLegacy {
+  max-width: min(520px, 44vw);
+}
+
+.stepImage {
+  width: 100%;
+  height: auto;
+  max-height: min(68vh, 640px);
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1023px) {
+  .rightColumn {
+    min-height: auto;
+  }
+
+  .visualStage,
+  .visualStageLegacy {
+    max-width: 100%;
+  }
+
+  .stepImage {
+    max-height: min(52vh, 420px);
+  }
+}

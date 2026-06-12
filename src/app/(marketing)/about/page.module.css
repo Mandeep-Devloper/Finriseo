@@ -1,0 +1,352 @@
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.page { background: white; }
+
+/* Hero */
+.hero {
+  background: #0A2E1A;
+  padding: 140px 24px 80px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.heroBg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin: 0 auto;
+  animation: fadeUp 0.7s ease forwards;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4ade80;
+  background: rgba(74,222,128,0.10);
+  border: 1px solid rgba(74,222,128,0.20);
+  padding: 5px 14px;
+  border-radius: 100px;
+  margin-bottom: 20px;
+}
+
+.eyebrowDark {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #16a34a;
+  margin-bottom: 14px;
+}
+
+.heroTitle {
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  margin-bottom: 20px;
+}
+
+.heroAccent {
+  color: #4ade80;
+  font-style: italic;
+}
+
+.heroSubtitle {
+  font-size: 1.0625rem;
+  color: rgba(255,255,255,0.50);
+  line-height: 1.75;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* Stats */
+.statsSection {
+  background: #0A2E1A;
+  padding: 0 24px 64px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  max-width: 1000px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.statCard {
+  background: rgba(255,255,255,0.03);
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.2s ease;
+}
+
+.statCard:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.statValue {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.03em;
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Mission */
+.missionSection {
+  padding: 96px 24px;
+  background: white;
+}
+
+.missionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.missionLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sectionTitle {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  color: #0d1b0f;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.missionText {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+.missionCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 14px 28px;
+  border-radius: 12px;
+  text-decoration: none;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.missionCta:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22,163,74,0.25);
+}
+
+.companyCard {
+  background: #f7fdf9;
+  border: 1px solid #dcfce7;
+  border-radius: 20px;
+  padding: 32px;
+  animation: scaleIn 0.6s ease 0.2s both;
+}
+
+.companyRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 0;
+}
+
+.companyLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.companyValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #0d1b0f;
+  line-height: 1.4;
+}
+
+.companyDivider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Values */
+.valuesSection {
+  padding: 96px 24px;
+  background: #f7f5f0;
+}
+
+.valuesHeader {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.valuesSectionTitle {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  color: #0d1b0f;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.valuesSectionSubtitle {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.valueCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 32px;
+  transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.valueCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+  border-color: #bbf7d0;
+}
+
+.valueIconWrap {
+  width: 48px;
+  height: 48px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  margin-bottom: 18px;
+  transition: all 0.3s ease;
+}
+
+.valueCard:hover .valueIconWrap {
+  background: #dcfce7;
+  box-shadow: 0 4px 16px rgba(22,163,74,0.15);
+}
+
+.valueTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0d1b0f;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.valueDesc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.65;
+}
+
+/* CTA Section */
+.ctaSection {
+  background: #0A2E1A;
+  padding: 96px 24px;
+  text-align: center;
+}
+
+.ctaTitle {
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.ctaSubtitle {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.50);
+  margin-bottom: 36px;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 16px 36px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.ctaBtn:hover {
+  background: #15803d;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(22,163,74,0.30);
+}
+
+@media (max-width: 900px) {
+  .statsGrid { grid-template-columns: repeat(2,1fr); }
+  .missionGrid { grid-template-columns: 1fr; gap: 40px; }
+  .valuesGrid { grid-template-columns: 1fr; }
+}

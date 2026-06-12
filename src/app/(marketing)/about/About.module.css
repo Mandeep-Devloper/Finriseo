@@ -1,0 +1,195 @@
+.heroSection {
+  padding-top: var(--sp-32, 8rem);
+  text-align: center;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-8, 2rem);
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.valueCard {
+  background-color: var(--white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl, 1.25rem);
+  padding: var(--sp-8, 2rem);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.valueCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.iconWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background-color: var(--green-50);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--sp-6, 1.5rem);
+}
+
+.icon {
+  color: var(--green-600);
+}
+
+.valueTitle {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: var(--sp-3, 0.75rem);
+}
+
+.valueDesc {
+  color: var(--color-text-secondary);
+  font-size: var(--text-base, 1rem);
+  line-height: 1.6;
+}
+
+.statsSection {
+  background-color: var(--green-900);
+  color: var(--white);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-8, 2rem);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.statBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2, 0.5rem);
+}
+
+.statValue {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
+  font-weight: 800;
+  color: var(--green-300);
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--green-100);
+  opacity: 0.9;
+}
+
+.companyInfoBox {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-12, 3rem);
+  background-color: var(--white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl, 1.25rem);
+  padding: var(--sp-8, 2rem);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 1024px) {
+  .companyInfoBox {
+    grid-template-columns: 1fr 1fr;
+    padding: var(--sp-12, 3rem);
+    align-items: center;
+  }
+}
+
+.companyTitle {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: var(--sp-6, 1.5rem);
+}
+
+.address {
+  font-style: normal;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  font-size: var(--text-base, 1rem);
+}
+
+.address strong {
+  color: var(--gray-900);
+  font-size: var(--text-lg, 1.125rem);
+}
+
+.contactEmail {
+  margin-top: var(--sp-4, 1rem);
+  color: var(--color-text-secondary);
+}
+
+.contactEmail a {
+  color: var(--green-700);
+  font-weight: 600;
+}
+
+.contactEmail a:hover {
+  text-decoration: underline;
+}
+
+.ctaWrapper {
+  background-color: var(--green-50);
+  padding: var(--sp-8, 2rem);
+  border-radius: var(--radius-xl, 1rem);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .ctaWrapper {
+    text-align: left;
+  }
+}
+
+.ctaTitle {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 700;
+  color: var(--green-900);
+  margin-bottom: var(--sp-2, 0.5rem);
+}
+
+.ctaDesc {
+  color: var(--green-800);
+  margin-bottom: var(--sp-6, 1.5rem);
+}
+
+.ctaButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4, 1rem);
+}
+
+@media (min-width: 480px) {
+  .ctaButtons {
+    flex-direction: row;
+  }
+}

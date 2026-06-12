@@ -1,0 +1,217 @@
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.pageHero {
+  background: linear-gradient(135deg, #0A2E1A 0%, #0f3d23 100%);
+  padding: 120px 24px 64px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pageHero::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pageHeroInner {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+  animation: fadeUp 0.6s ease forwards;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4ade80;
+  margin-bottom: 14px;
+  background: rgba(74,222,128,0.10);
+  border: 1px solid rgba(74,222,128,0.20);
+  padding: 5px 14px;
+  border-radius: 100px;
+}
+
+.pageTitle {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.04em;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+
+.pageSubtitle {
+  font-size: 1.0625rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.calcWrapper {
+  max-width: 1100px;
+  margin: -40px auto 0;
+  padding: 0 24px 64px;
+  position: relative;
+  z-index: 2;
+  animation: fadeUp 0.7s ease 0.15s both;
+}
+
+.seoSection {
+  background: #f7f5f0;
+  padding: 72px 24px;
+}
+
+.seoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto 48px;
+}
+
+.seoCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.seoCard h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0d1b0f;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.seoCard p {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.7;
+}
+
+.formula {
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  color: #15803d;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  text-align: center;
+}
+
+.formulaNote {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 0;
+}
+
+.tipList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tipItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.tipDot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  background: #16a34a;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+
+.tableWrap {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.tableTitle {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #0d1b0f;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.tableScroll { overflow-x: auto; }
+
+.emiTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.emiTable th {
+  background: #0A2E1A;
+  color: rgba(255,255,255,0.80);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  text-align: right;
+}
+
+.emiTable th:first-child { text-align: left; }
+
+.emiTable td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #374151;
+  text-align: right;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.emiTable td:first-child { text-align: left; }
+.emiTable tr:last-child td { border-bottom: none; }
+.emiTable tr:hover td { background: #f9fafb; }
+
+.rateCell { font-weight: 700; color: #0A2E1A; }
+
+.highlight {
+  color: #15803d;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .seoGrid { grid-template-columns: 1fr; }
+  .pageHero { padding: 100px 16px 48px; }
+}

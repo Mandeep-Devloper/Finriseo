@@ -1,0 +1,268 @@
+.navbarWrapper {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 1100px;
+  z-index: 1000;
+}
+
+.navbar {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.08),
+    inset 0 2px 6px rgba(255, 255, 255, 0.8),
+    inset 0 -4px 12px rgba(255, 255, 255, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbarScrolled {
+  background: rgba(10, 46, 26, 0.85); /* dark green glass */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.12),
+    inset 0 1px 2px rgba(255, 255, 255, 0.05);
+  transform: translateY(2px);
+}
+
+.logoTextPath {
+  fill: #0d1b0f;
+  transition: fill 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbarScrolled .logoTextPath {
+  fill: #FBFFFD; /* White color when scrolled (green bg) */
+}
+
+.navbarScrolled .navLink {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.navbarScrolled .navLink:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navbarScrolled .navLinkActive {
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.navbarScrolled .navCta {
+  background: white;
+  color: #0d1b0f;
+}
+
+.navbarScrolled .navCta:hover {
+  background: #f3f4f6;
+}
+
+.navbarScrolled .hamburger {
+  color: white;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  height: 100%;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.navLink {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.navLink:hover {
+  color: #0d1b0f;
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.03);
+}
+
+.navLink:active {
+  transform: scale(1.08);
+}
+
+.navLinkActive {
+  color: #0d1b0f;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.navCta {
+  background: #16a34a;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.navCta:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+}
+
+/* Dropdown Menu (Always Dark) */
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 46, 26, 0.97);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 220px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  z-index: 100;
+}
+
+/* Invisible bridge to prevent mouseleave when moving from nav link to dropdown */
+.dropdownMenu::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.dropdownItem {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dropdownItem:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
+
+.dropdownMenu .navLink {
+  color: rgba(255, 255, 255, 0.70) !important;
+  padding: 8px 16px;
+  border-radius: 0;
+}
+
+.dropdownMenu .navLink:hover {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dropdownMenu .navLinkActive {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #0d1b0f;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.hamburger:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.mobileMenu {
+  position: fixed;
+  top: 82px;
+  left: 12px;
+  right: 12px;
+  background: rgba(10, 46, 26, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.mobileNavLink {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.mobileNavLink:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mobileCta {
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+  padding: 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  margin-top: 8px;
+  transition: background 0.2s ease;
+}
+
+.mobileCta:hover {
+  background: #15803d;
+}
+
+@media (max-width: 768px) {
+  .navLinks { display: none; }
+  .navCta { display: none; }
+  .hamburger { display: flex; }
+}

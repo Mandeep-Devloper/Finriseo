@@ -1,0 +1,214 @@
+.calculatorSection {
+  background-color: var(--white);
+}
+
+.calculatorBox {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-12, 3rem);
+  background-color: var(--cream, #FAFAF5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl, 1.25rem);
+  padding: var(--sp-8, 2rem);
+  box-shadow: var(--shadow-md);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .calculatorBox {
+    grid-template-columns: 1.2fr 1fr;
+    padding: var(--sp-12, 3rem);
+    align-items: center;
+  }
+}
+
+.controlsCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8, 2rem);
+}
+
+.sliderGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4, 1rem);
+}
+
+.sliderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  color: var(--gray-800);
+  font-size: var(--text-base, 1rem);
+}
+
+.valueBadge {
+  background-color: var(--white);
+  padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  color: var(--green-700);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.rangeInput {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(to right, var(--emerald-500) var(--progress, 50%), var(--gray-200) var(--progress, 50%));
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.rangeInput::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 3px solid var(--emerald-500);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.rangeInput::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 3px solid var(--emerald-500);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.rangeInput:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.rangeInput:active::-moz-range-thumb {
+  transform: scale(1.1);
+}
+
+.sliderLimits {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.resultsCol {
+  background-color: var(--white);
+  border-radius: var(--radius-xl, 1rem);
+  padding: var(--sp-8, 2rem);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8, 2rem);
+}
+
+.chartWrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.donutChart {
+  width: 100%;
+  height: 100%;
+}
+
+.chartCircle {
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.chartCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.emiLabel {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  margin-bottom: var(--sp-1, 0.25rem);
+}
+
+.emiValue {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: 800;
+  color: var(--green-900);
+}
+
+.breakdownBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4, 1rem);
+}
+
+.breakdownRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--gray-800);
+}
+
+.breakdownLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2, 0.5rem);
+  color: var(--color-text-secondary);
+}
+
+.dotPrincipal {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--emerald-500);
+}
+
+.dotInterest {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--green-200);
+}
+
+.breakdownTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--sp-2, 0.5rem);
+  padding-top: var(--sp-4, 1rem);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-base, 1rem);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.applyBtn {
+  width: 100%;
+  text-align: center;
+}
