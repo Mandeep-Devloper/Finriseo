@@ -37,6 +37,14 @@
     gap: 40px;
   }
 
+  .heroLeft {
+    order: 2;
+  }
+
+  .heroRight {
+    order: 1;
+  }
+
   .rotatingWord {
     font-size: clamp(2rem, 8vw, 3rem);
   }
@@ -452,13 +460,16 @@
 
 @media (max-width: 900px) {
   .badgeStrip {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
     border-radius: 16px;
   }
 
   .badge {
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: none;
+    border-radius: 12px;
   }
 
   .badge:last-child {

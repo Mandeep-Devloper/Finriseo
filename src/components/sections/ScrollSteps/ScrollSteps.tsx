@@ -83,13 +83,28 @@ export default function ScrollSteps() {
                     <div
                       key={index}
                       className={`${styles.stepItem} ${isActive ? styles.active : ''} ${isPast ? styles.past : ''}`}
+                      onClick={() => setActiveStep(index)}
+                      style={{ cursor: 'pointer' }}
                     >
                       <div className={styles.stepIndicator}>
                         <div className={styles.stepNumber}>{index + 1}</div>
                       </div>
                       <div className={styles.stepText}>
                         <h3 className={styles.stepTitle}>{step.title}</h3>
-                        <p className={styles.stepDesc}>{step.desc}</p>
+                        <p
+                          className={styles.stepDesc}
+                          style={{
+                            opacity: isActive ? 1 : 0,
+                            transform: isActive ? 'translateY(0)' : 'translateY(8px)',
+                            maxHeight: isActive ? '200px' : '0px',
+                            overflow: 'hidden',
+                            transition: 'opacity 300ms ease-in-out, transform 300ms ease-in-out, max-height 300ms ease-in-out, margin-top 300ms ease-in-out',
+                            marginTop: isActive ? '8px' : '0px',
+                            marginBottom: 0,
+                          }}
+                        >
+                          {step.desc}
+                        </p>
                       </div>
                     </div>
                   );
