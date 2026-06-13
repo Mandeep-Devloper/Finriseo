@@ -1,6 +1,8 @@
 {
   "framework": "nextjs",
   "regions": ["bom1"],
+  "nodeVersion": "20.x",
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && next build",
   "env": {
     "NEXT_PUBLIC_APP_ENV": "production"
   }

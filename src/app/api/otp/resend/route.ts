@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { otpStore, generateOtp, checkRateLimit } from '../_otpStore';
+import { generateOtp, checkRateLimit } from '../_otpStore';
+import { db } from '@/lib/db';
 
 const schema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number'),
@@ -29,8 +30,13 @@ export async function POST(req: NextRequest) {
     }
 
     const otp = generateOtp();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-    otpStore.set(mobile, { otp, expiresAt, attempts: 0 });
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await db.otpSession.upsert({
+      where: { mobile },
+      update: { otp, expiresAt, attempts: 0 },
+      create: { mobile, otp, expiresAt },
+    });
 
     // TODO: MSG91 integration
     // await msg91.sendOtp(mobile, otp);
@@ -38,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'OTP sent to your mobile number',
+      message: 'OTP resent to your mobile number',
       expiresInSeconds: 600,
       ...(process.env.NODE_ENV === 'development' && { _devOtp: otp }),
     });
