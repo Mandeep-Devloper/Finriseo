@@ -4,6 +4,19 @@
   animation: fadeIn 0.4s ease-out;
 }
 
+/* Mobile image slot — hidden on desktop */
+.mobileImageSlot {
+  display: block;
+  width: calc(100% + 3rem);
+  margin: -1.5rem -1.5rem 1.25rem;
+  height: 200px;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .mobileImageSlot { display: none; }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

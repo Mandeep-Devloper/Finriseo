@@ -101,45 +101,11 @@ export default function BasicInfoStep() {
 
   return (
     <div className={styles.container}>
-      {/* Mobile-only hero card — only shown on the form step */}
+      {/* Mobile image slot — shown on form step only; hidden on desktop */}
       {step === 'form' && (
-        <div className={styles.mobileHero}>
-          <div className={styles.heroCard}>
-            <div className={styles.heroCardDots} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/robot.png" alt="" aria-hidden className={styles.heroCardRobot} />
-            <div className={styles.heroCardContent}>
-              <div className={styles.heroCardLogo}>
-                <span className={styles.heroCardLogoIcon}>F</span>
-                <span className={styles.heroCardLogoText}>Finriseo</span>
-              </div>
-              <h2 className={styles.heroCardHeading}>
-                Your Journey to{' '}
-                <span className={styles.heroCardGreen}>Financial Freedom</span>{' '}
-                starts here
-              </h2>
-              <div className={styles.heroCardChips}>
-                <span className={styles.heroCardChip}>
-                  <span className={styles.heroCardChipDot} />
-                  Pre Approved Offers
-                </span>
-                <span className={styles.heroCardChip}>
-                  <span className={styles.heroCardChipDot} />
-                  Low Interest Rates
-                </span>
-                <span className={styles.heroCardChip}>
-                  <span className={styles.heroCardChipDot} />
-                  RBI Approved Lenders
-                </span>
-              </div>
-            </div>
-            <div className={styles.heroCardTicker}>
-              <span className={styles.heroCardTickerText}>
-                <span className={styles.heroCardTickerCount}>2,323+</span> people like you found better loan offers
-              </span>
-              <span className={styles.heroCardTickerBadge}>100% Secure</span>
-            </div>
-          </div>
+        <div className={styles.mobileImageSlot}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/firststep.svg" alt="" className={styles.slotImage} />
         </div>
       )}
 

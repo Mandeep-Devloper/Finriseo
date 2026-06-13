@@ -1,11 +1,55 @@
 // In-memory OTP store with auto-cleanup
-// Replace with Redis in production for multi-instance safety
+// Used directly when DATABASE_URL is not set (local dev); DB is used in production
 
 export const otpStore = new Map<string, {
   otp: string;
   expiresAt: number;
   attempts: number;
 }>();
+
+const HAS_DB = !!process.env.DATABASE_URL;
+
+export async function saveOtpSession(mobile: string, otp: string, expiresAt: Date) {
+  if (HAS_DB) {
+    const { db } = await import('@/lib/db');
+    await db.otpSession.upsert({
+      where: { mobile },
+      update: { otp, expiresAt, attempts: 0 },
+      create: { mobile, otp, expiresAt },
+    });
+  } else {
+    otpStore.set(mobile, { otp, expiresAt: expiresAt.getTime(), attempts: 0 });
+  }
+}
+
+export async function getOtpSession(mobile: string) {
+  if (HAS_DB) {
+    const { db } = await import('@/lib/db');
+    return db.otpSession.findUnique({ where: { mobile } });
+  }
+  const stored = otpStore.get(mobile);
+  if (!stored) return null;
+  return { otp: stored.otp, expiresAt: new Date(stored.expiresAt), attempts: stored.attempts };
+}
+
+export async function incrementOtpAttempts(mobile: string, current: number) {
+  if (HAS_DB) {
+    const { db } = await import('@/lib/db');
+    await db.otpSession.update({ where: { mobile }, data: { attempts: current + 1 } });
+  } else {
+    const stored = otpStore.get(mobile);
+    if (stored) stored.attempts = current + 1;
+  }
+}
+
+export async function deleteOtpSession(mobile: string) {
+  if (HAS_DB) {
+    const { db } = await import('@/lib/db');
+    try { await db.otpSession.delete({ where: { mobile } }); } catch { /* already deleted */ }
+  } else {
+    otpStore.delete(mobile);
+  }
+}
 
 export const rateLimitStore = new Map<string, {
   count: number;

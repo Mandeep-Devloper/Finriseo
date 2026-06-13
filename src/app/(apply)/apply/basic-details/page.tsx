@@ -52,6 +52,8 @@ export default function BasicDetailsStep() {
 
   return (
     <div className={styles.container}>
+      {/* Mobile image slot — add your step image here */}
+      <div className={styles.mobileImageSlot} />
       <div className={styles.stepHeader}>
         <button
           type="button"

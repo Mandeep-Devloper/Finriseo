@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+import { getOtpSession, incrementOtpAttempts, deleteOtpSession } from '../_otpStore';
 
 const schema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/),
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { mobile, otp } = result.data;
-    const stored = await db.otpSession.findUnique({ where: { mobile } });
+    const stored = await getOtpSession(mobile);
 
     if (!stored) {
       return NextResponse.json(
@@ -25,31 +25,28 @@ export async function POST(req: NextRequest) {
       );
     }
     if (Date.now() > stored.expiresAt.getTime()) {
-      await db.otpSession.delete({ where: { mobile } });
+      await deleteOtpSession(mobile);
       return NextResponse.json(
         { success: false, error: 'OTP expired. Request a new one.' },
         { status: 400 }
       );
     }
     if (stored.attempts >= 5) {
-      await db.otpSession.delete({ where: { mobile } });
+      await deleteOtpSession(mobile);
       return NextResponse.json(
         { success: false, error: 'Too many wrong attempts. Request a new OTP.' },
         { status: 429 }
       );
     }
     if (stored.otp !== otp) {
-      await db.otpSession.update({
-        where: { mobile },
-        data: { attempts: stored.attempts + 1 },
-      });
+      await incrementOtpAttempts(mobile, stored.attempts);
       return NextResponse.json(
         { success: false, error: `Wrong OTP. ${5 - stored.attempts - 1} attempts left.` },
         { status: 400 }
       );
     }
 
-    await db.otpSession.delete({ where: { mobile } }); // one-time use
+    await deleteOtpSession(mobile);
     return NextResponse.json({ success: true, verified: true });
   } catch {
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
