@@ -112,21 +112,23 @@ export function ApplyLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
 
-          {/* Trust Badges */}
-          <div className={styles.trustRow}>
-            <div className={styles.trustItem}>
-              <Lock size={16} />
-              <span>100% Data Secure</span>
+          {/* Trust Badges — hidden on first /apply step since the hero card already shows security info */}
+          {pathname !== '/apply' && (
+            <div className={styles.trustRow}>
+              <div className={styles.trustItem}>
+                <Lock size={16} />
+                <span>100% Data Secure</span>
+              </div>
+              <div className={styles.trustItem}>
+                <FileText size={16} />
+                <span>Zero Paperwork</span>
+              </div>
+              <div className={styles.trustItem}>
+                <Zap size={16} />
+                <span>Zero Hidden Charges</span>
+              </div>
             </div>
-            <div className={styles.trustItem}>
-              <FileText size={16} />
-              <span>Zero Paperwork</span>
-            </div>
-            <div className={styles.trustItem}>
-              <Zap size={16} />
-              <span>Zero Hidden Charges</span>
-            </div>
-          </div>
+          )}
 
         </div>
       </main>

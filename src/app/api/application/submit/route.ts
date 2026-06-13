@@ -10,10 +10,10 @@ const schema = z.object({
   fullName: z.string().min(2),
   employmentType: z.string().min(1),
   monthlyIncome: z.coerce.number().positive(),
-  employer: z.string().min(1),
-  experience: z.string().min(1),
+  employer: z.string().optional(),
+  experience: z.string().optional(),
   loanAmount: z.coerce.number().positive(),
-  loanPurpose: z.string().min(1),
+  loanPurpose: z.string().optional(),
   selectedOfferId: z.number().optional(),
 });
 
@@ -22,15 +22,15 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') 
-      ?? headersList.get('x-real-ip') 
+    const ip = headersList.get('x-forwarded-for')
+      ?? headersList.get('x-real-ip')
       ?? 'unknown';
 
     const ipCheck = checkIpRateLimit(ip, 5, 60); // 5 submits per hour per IP
     if (!ipCheck.allowed) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: `Too many submissions. Try again in ${Math.ceil((ipCheck.retryAfter ?? 3600) / 60)} minutes.`
         },
         { status: 429 }
@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
         fullName: result.data.fullName,
         employmentType: result.data.employmentType,
         monthlyIncome: result.data.monthlyIncome,
-        employer: result.data.employer,
-        experience: result.data.experience,
+        employer: result.data.employer ?? null,
+        experience: result.data.experience ?? null,
         loanAmount: result.data.loanAmount,
-        loanPurpose: result.data.loanPurpose,
+        loanPurpose: result.data.loanPurpose ?? null,
         selectedOfferId: result.data.selectedOfferId,
         status: 'submitted',
         source: 'web',

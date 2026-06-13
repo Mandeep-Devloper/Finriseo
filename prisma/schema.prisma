@@ -14,10 +14,10 @@ model Application {
   fullName        String
   employmentType  String
   monthlyIncome   Float
-  employer        String
-  experience      String
+  employer        String?
+  experience      String?
   loanAmount      Float
-  loanPurpose     String
+  loanPurpose     String?
   selectedOfferId Int?
   status          String   @default("submitted")
   source          String   @default("web")
