@@ -244,27 +244,37 @@
 
 /* On mobile the form is a full page, not a floating card */
 @media (max-width: 767px) {
+  /* Let the page hug its content instead of stretching to 100vh,
+     which left dead white space below short steps like step 1 */
+  .applyContainer {
+    min-height: auto;
+  }
+
   .rightPanel {
     background-color: var(--white);
+    min-height: auto;
   }
 
   .rightContent {
     max-width: 100%;
     padding: 0;
+    flex: none;
   }
 
   .formArea {
-    flex: 1;
+    flex: none;
     background-color: var(--white);
     border: none;
     border-radius: 0;
     box-shadow: none;
     padding: var(--sp-6, 1.5rem);
+    padding-bottom: var(--sp-8, 2rem);
     margin-bottom: 0;
   }
 
   .trustRow {
     padding: var(--sp-6, 1.5rem);
+    margin-top: var(--sp-2, 0.5rem);
   }
 }
 
