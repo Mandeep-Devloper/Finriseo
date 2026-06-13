@@ -16,10 +16,9 @@
   overflow: hidden;
 }
 
-.mobileHeroSpacer {
-  display: block;
-  height: 180px;
-  width: 100%;
+.mobileHighlight {
+  color: var(--green-700);
+  font-weight: 700;
 }
 
 .heroImage {

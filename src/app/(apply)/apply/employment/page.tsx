@@ -60,10 +60,22 @@ export default function EmploymentStep() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.stepHeader}>
+        <button
+          type="button"
+          onClick={() => router.push("/apply/basic-details")}
+          className={styles.backIconBtn}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span className={styles.stepFraction}>2 / 3</span>
+      </div>
+
       <div className={styles.header}>
         <h2 className={styles.title}>Your employment details</h2>
         <p className={styles.subtitle}>
-          Complete your profile to unlock personalized loan offers.
+          Complete your income profile to unlock personalized loan offers.
         </p>
       </div>
 

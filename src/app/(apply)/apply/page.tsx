@@ -101,14 +101,12 @@ export default function BasicInfoStep() {
 
   return (
     <div className={styles.container}>
-      {/* Mobile-only hero image — only shown on the form step, not OTP */}
-      {step === 'form' ? (
+      {/* Mobile-only hero image — only shown on the form step */}
+      {step === 'form' && (
         <div className={styles.mobileHero}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/firststep.svg" alt="Financial Freedom" className={styles.heroImage} />
         </div>
-      ) : (
-        <div className={styles.mobileHeroSpacer} />
       )}
 
       <div className={styles.header}>
@@ -116,9 +114,9 @@ export default function BasicInfoStep() {
           {step === 'form' ? 'Get personalized Loan Offers' : 'OTP Verification'}
         </h2>
         <p className={styles.subtitle}>
-          {step === 'form' 
-            ? 'Get a Loan up to ₹50,00,000 in Minutes.' 
-            : `We've sent a 6-digit OTP code to +91 ${currentMobile}`}
+          {step === 'form'
+            ? 'Get a Loan up to ₹50,00,000 in Minutes.'
+            : <>Please enter the 6-digit OTP sent to{' '}<span className={styles.mobileHighlight}>+91&nbsp;{currentMobile}</span></>}
         </p>
       </div>
 

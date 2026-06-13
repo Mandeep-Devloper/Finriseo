@@ -48,6 +48,18 @@ export default function PanStep() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.stepHeader}>
+        <button
+          type="button"
+          onClick={() => router.push('/apply/employment')}
+          className={styles.backIconBtn}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span className={styles.stepFraction}>3 / 3</span>
+      </div>
+
       <div className={styles.header}>
         <h2 className={styles.title}>Please verify your PAN</h2>
         <p className={styles.subtitle}>

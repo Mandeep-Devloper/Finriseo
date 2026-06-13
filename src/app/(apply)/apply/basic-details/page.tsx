@@ -52,10 +52,22 @@ export default function BasicDetailsStep() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.stepHeader}>
+        <button
+          type="button"
+          onClick={() => router.push('/apply')}
+          className={styles.backIconBtn}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span className={styles.stepFraction}>1 / 3</span>
+      </div>
+
       <div className={styles.header}>
         <h2 className={styles.title}>Fill your basic details</h2>
         <p className={styles.subtitle}>
-          Complete your profile to unlock personalized loan offers.
+          Complete your income profile to unlock personalized loan offers.
         </p>
       </div>
 

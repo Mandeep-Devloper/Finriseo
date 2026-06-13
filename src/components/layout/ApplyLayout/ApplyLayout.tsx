@@ -97,15 +97,6 @@ export function ApplyLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          {/* Mobile Image / Placeholder Area — visible on mobile only */}
-          {pathname !== '/apply' && (
-            <div className={styles.mobileImageArea}>
-              <div className={styles.mobileImagePlaceholder}>
-                {/* Reserved for step-specific images — will be added later */}
-              </div>
-            </div>
-          )}
-
           {/* Mobile-only thin progress bar */}
           {currentStepIndex > 0 && (
             <div className={styles.mobileProgressBar}>
