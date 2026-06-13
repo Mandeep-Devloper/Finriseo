@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShieldCheck, CheckCircle2, Lock, FileText, Zap } from 'lucide-react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import styles from './ApplyLayout.module.css';
 
 const STEPS = [
@@ -97,38 +97,10 @@ export function ApplyLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          {/* Mobile-only thin progress bar */}
-          {currentStepIndex > 0 && (
-            <div className={styles.mobileProgressBar}>
-              <div 
-                className={styles.mobileProgressFill} 
-                style={{ width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%` }}
-              />
-            </div>
-          )}
-
           {/* Dynamic Route Content */}
           <div className={styles.formArea}>
             {children}
           </div>
-
-          {/* Trust Badges — hidden on first /apply step since the hero card already shows security info */}
-          {pathname !== '/apply' && (
-            <div className={styles.trustRow}>
-              <div className={styles.trustItem}>
-                <Lock size={16} />
-                <span>100% Data Secure</span>
-              </div>
-              <div className={styles.trustItem}>
-                <FileText size={16} />
-                <span>Zero Paperwork</span>
-              </div>
-              <div className={styles.trustItem}>
-                <Zap size={16} />
-                <span>Zero Hidden Charges</span>
-              </div>
-            </div>
-          )}
 
         </div>
       </main>

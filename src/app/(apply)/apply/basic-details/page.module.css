@@ -59,11 +59,36 @@
   margin: var(--sp-1, 0.25rem) 0 0 0;
 }
 
-.stepHeader {
+/* ── Mobile top bar: back arrow + segmented progress ── */
+.mobileTop {
   display: none;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--sp-4, 1rem);
   margin-bottom: var(--sp-5, 1.25rem);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 0.75rem);
+}
+
+.progressTrack {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+}
+
+.seg {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--gray-200, #e5e7eb);
+  transition: background 0.3s ease;
+}
+
+.segOn {
+  background: var(--forest-600, #1A5C32);
 }
 
 .backIconBtn {
@@ -108,7 +133,15 @@
 }
 
 @media (max-width: 767px) {
-  .stepHeader {
+  .container {
+    flex: 1;
+  }
+
+  .form {
+    flex: 1;
+  }
+
+  .mobileTop {
     display: flex;
   }
 
@@ -118,6 +151,9 @@
 
   .actions {
     display: block;
+    border-top: none;
+    padding-top: 0;
+    margin-top: auto;
   }
 
   .actions :global(.btn--cta) {

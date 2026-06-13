@@ -242,27 +242,32 @@
   }
 }
 
-/* On mobile the form is a full page, not a floating card */
+/* On mobile the form is a full-height app screen, not a floating card */
 @media (max-width: 767px) {
-  /* Let the page hug its content instead of stretching to 100vh,
-     which left dead white space below short steps like step 1 */
+  /* Fill the phone viewport so it feels like a native app screen,
+     with the primary CTA anchored near the bottom (no dead white gap). */
   .applyContainer {
-    min-height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .rightPanel {
     background-color: var(--white);
-    min-height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .rightContent {
     max-width: 100%;
     padding: 0;
-    flex: none;
+    flex: 1;
+    display: flex;
   }
 
   .formArea {
-    flex: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: var(--white);
     border: none;
     border-radius: 0;
@@ -272,9 +277,9 @@
     margin-bottom: 0;
   }
 
+  /* Trust badges removed on mobile per design — security note lives on the PAN step */
   .trustRow {
-    padding: var(--sp-6, 1.5rem);
-    margin-top: var(--sp-2, 0.5rem);
+    display: none;
   }
 }
 

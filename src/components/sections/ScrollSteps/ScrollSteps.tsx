@@ -23,14 +23,14 @@ const STEPS = [
   {
     title: 'Verify PAN & Compare Loans',
     desc: 'Verify your PAN details and compare personalized loan offers from trusted lenders in one place.',
-    image: '/step2.png',
+    image: '/step2.svg',
     width: 600,
     height: 584,
   },
   {
     title: 'Get Your Loan',
     desc: 'Choose your preferred lender, complete the final process, and get your loan directly in your bank account.',
-    image: '/step-funded.webp',
+    image: '/step3.svg',
     width: 600,
     height: 600,
   },

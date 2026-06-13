@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step2Schema, Step2FormData } from '@/lib/validations';
 import styles from './page.module.css';
@@ -54,7 +54,7 @@ export default function BasicDetailsStep() {
     <div className={styles.container}>
       {/* Mobile image slot — add your step image here */}
       <div className={styles.mobileImageSlot} />
-      <div className={styles.stepHeader}>
+      <div className={styles.mobileTop}>
         <button
           type="button"
           onClick={() => router.push('/apply')}
@@ -63,7 +63,14 @@ export default function BasicDetailsStep() {
         >
           <ArrowLeft size={20} />
         </button>
-        <span className={styles.stepFraction}>1 / 3</span>
+        <div className={styles.progressRow}>
+          <div className={styles.progressTrack}>
+            <span className={`${styles.seg} ${styles.segOn}`} />
+            <span className={styles.seg} />
+            <span className={styles.seg} />
+          </div>
+          <span className={styles.stepFraction}>1/3</span>
+        </div>
       </div>
 
       <div className={styles.header}>
@@ -144,7 +151,6 @@ export default function BasicDetailsStep() {
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Save & Continue'}
-            {!isSubmitting && <ArrowRight size={16} />}
           </button>
         </div>
       </form>

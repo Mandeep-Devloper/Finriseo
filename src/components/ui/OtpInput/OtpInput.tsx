@@ -6,11 +6,12 @@ import styles from './OtpInput.module.css';
 interface OtpInputProps {
   length?: number;
   onComplete: (otp: string) => void;
+  onChange?: (otp: string) => void;
   error?: string;
   disabled?: boolean;
 }
 
-export function OtpInput({ length = 6, onComplete, error, disabled = false }: OtpInputProps) {
+export function OtpInput({ length = 6, onComplete, onChange, error, disabled = false }: OtpInputProps) {
   const [otp, setOtp] = useState<string[]>(new Array(length).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -38,6 +39,7 @@ export function OtpInput({ length = 6, onComplete, error, disabled = false }: Ot
     }
 
     const currentOtp = newOtp.join('');
+    onChange?.(currentOtp);
     if (currentOtp.length === length) {
       onComplete(currentOtp);
     }
@@ -50,6 +52,7 @@ export function OtpInput({ length = 6, onComplete, error, disabled = false }: Ot
         const newOtp = [...otp];
         newOtp[index - 1] = '';
         setOtp(newOtp);
+        onChange?.(newOtp.join(''));
         focusInput(index - 1);
       }
     } else if (e.key === 'ArrowLeft') {
@@ -71,10 +74,11 @@ export function OtpInput({ length = 6, onComplete, error, disabled = false }: Ot
         newOtp[i] = pastedData[i];
       }
       setOtp(newOtp);
-      
+
       const nextIndex = Math.min(pastedData.length, length - 1);
       focusInput(nextIndex);
 
+      onChange?.(newOtp.join(''));
       if (pastedData.length === length) {
         onComplete(newOtp.join(''));
       }

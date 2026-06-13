@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2, Pencil } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step1Schema, Step1FormData } from '@/lib/validations';
 import { OtpInput } from '@/components/ui/OtpInput';
@@ -27,6 +27,9 @@ export default function BasicInfoStep() {
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(60);
+  const [otpValue, setOtpValue] = useState('');
+  const [consentTerms, setConsentTerms] = useState(true);
+  const [consentWhatsapp, setConsentWhatsapp] = useState(true);
   
   const hasAutoSent = React.useRef(false);
 
@@ -116,7 +119,17 @@ export default function BasicInfoStep() {
         <p className={styles.subtitle}>
           {step === 'form'
             ? 'Get a Loan up to ₹50,00,000 in Minutes.'
-            : <>Please enter the 6-digit OTP sent to{' '}<span className={styles.mobileHighlight}>+91&nbsp;{currentMobile}</span></>}
+            : <>Please enter the 6-digit OTP sent to{' '}<span className={styles.mobileHighlight}>+91&nbsp;{currentMobile}</span>
+                <button
+                  type="button"
+                  onClick={() => setStep('form')}
+                  className={styles.editMobileBtn}
+                  disabled={isLoading}
+                  aria-label="Change mobile number"
+                >
+                  <Pencil size={14} />
+                </button>
+              </>}
         </p>
       </div>
 
@@ -146,9 +159,9 @@ export default function BasicInfoStep() {
               <input
                 id="mobile"
                 type="tel"
-                placeholder="9876543210"
+                placeholder="Enter 10-digit mobile number"
                 maxLength={10}
-                className={`${styles.input} ${errors.mobile ? styles.inputError : ''}`}
+                className={`${styles.input} ${styles.inputNormal} ${errors.mobile ? styles.inputError : ''}`}
                 {...register('mobile')}
               />
             </div>
@@ -156,46 +169,33 @@ export default function BasicInfoStep() {
             {apiError && <p className={styles.errorText} role="alert">{apiError}</p>}
           </div>
 
-          <div className={styles.consentBox}>
-            <input
-              type="checkbox"
-              id="consent"
-              className={styles.checkbox}
-              {...register('consent')}
-            />
-            <label htmlFor="consent" className={styles.consentText}>
-              By proceeding, you agree to our <Link href="/terms" className={styles.link}>T&C</Link> and <Link href="/privacy-policy" className={styles.link}>Privacy Policy</Link> and consent to receive communication via WhatsApp, RCS & SMS. I authorize Finriseo to credit/debit my account and declare I am not a PEP.
-            </label>
-          </div>
-          {errors.consent && <p className={styles.errorText} role="alert">{errors.consent.message}</p>}
-
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={`btn btn--cta btn--lg ${styles.submitBtn} ${isLoading ? 'btn--disabled' : ''}`}
             disabled={isLoading}
           >
             {isLoading ? <><Loader2 size={18} className="spin" /> Sending...</> : 'Check Eligibility'}
-            {!isLoading && <ArrowRight size={20} />}
           </button>
+
+          <p className={styles.cibilNote}>No impact on your CIBIL score</p>
         </form>
       )}
 
       {step === 'otp' && (
         <div className={styles.form}>
           <div className={styles.otpWrapper}>
-            <OtpInput 
-              length={6} 
-              onComplete={handleVerifyOtp} 
+            <OtpInput
+              length={6}
+              onComplete={setOtpValue}
+              onChange={setOtpValue}
               error={otpError}
               disabled={isLoading}
             />
           </div>
 
-          {isLoading && <p className={styles.verifyingText}>Verifying code...</p>}
-
           <div className={styles.otpActions}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleResendOtp}
               disabled={timer > 0 || isLoading}
               className={`${styles.resendBtn} ${timer > 0 ? styles.disabled : ''}`}
@@ -205,15 +205,39 @@ export default function BasicInfoStep() {
             </button>
           </div>
 
-          <button 
-            type="button" 
-            onClick={() => setStep('form')}
-            className={styles.backBtn}
-            disabled={isLoading}
-            aria-label="Go back to previous step"
+          <div className={styles.consentBox}>
+            <input
+              type="checkbox"
+              id="consentTerms"
+              className={styles.checkbox}
+              checked={consentTerms}
+              onChange={(e) => setConsentTerms(e.target.checked)}
+            />
+            <label htmlFor="consentTerms" className={styles.consentText}>
+              By proceeding, you agree to our <Link href="/terms" className={styles.link}>Terms &amp; Conditions</Link> and <Link href="/privacy-policy" className={styles.link}>Privacy Policy</Link>, and consent to us accessing your credit information from credit bureaus for processing your application.
+            </label>
+          </div>
+
+          <div className={styles.consentBox}>
+            <input
+              type="checkbox"
+              id="consentWhatsapp"
+              className={styles.checkbox}
+              checked={consentWhatsapp}
+              onChange={(e) => setConsentWhatsapp(e.target.checked)}
+            />
+            <label htmlFor="consentWhatsapp" className={styles.consentText}>
+              I consent to receive loan-related updates, alerts, and communications via WhatsApp on my registered mobile number.
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleVerifyOtp(otpValue)}
+            className={`btn btn--cta btn--lg ${styles.submitBtn} ${(isLoading || otpValue.length !== 6 || !consentTerms) ? 'btn--disabled' : ''}`}
+            disabled={isLoading || otpValue.length !== 6 || !consentTerms}
           >
-            <ArrowLeft size={16} />
-            Change Mobile Number
+            {isLoading ? <><Loader2 size={18} className="spin" /> Verifying...</> : 'Continue to Verify'}
           </button>
         </div>
       )}

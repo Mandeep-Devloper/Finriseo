@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useApplicationStore } from "@/store/applicationStore";
 import { step3Schema, Step3FormData } from "@/lib/validations";
 import { trackEvent, EVENTS } from '@/lib/analytics';
@@ -62,7 +62,7 @@ export default function EmploymentStep() {
     <div className={styles.container}>
       {/* Mobile image slot — add your step image here */}
       <div className={styles.mobileImageSlot} />
-      <div className={styles.stepHeader}>
+      <div className={styles.mobileTop}>
         <button
           type="button"
           onClick={() => router.push("/apply/basic-details")}
@@ -71,7 +71,14 @@ export default function EmploymentStep() {
         >
           <ArrowLeft size={20} />
         </button>
-        <span className={styles.stepFraction}>2 / 3</span>
+        <div className={styles.progressRow}>
+          <div className={styles.progressTrack}>
+            <span className={`${styles.seg} ${styles.segOn}`} />
+            <span className={`${styles.seg} ${styles.segOn}`} />
+            <span className={styles.seg} />
+          </div>
+          <span className={styles.stepFraction}>2/3</span>
+        </div>
       </div>
 
       <div className={styles.header}>
@@ -171,7 +178,6 @@ export default function EmploymentStep() {
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Continue to Verify"}
-            {!isSubmitting && <ArrowRight size={16} />}
           </button>
         </div>
       </form>

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step4Schema, Step4FormData } from '@/lib/validations';
 import styles from './page.module.css';
@@ -50,7 +50,7 @@ export default function PanStep() {
     <div className={styles.container}>
       {/* Mobile image slot — add your step image here */}
       <div className={styles.mobileImageSlot} />
-      <div className={styles.stepHeader}>
+      <div className={styles.mobileTop}>
         <button
           type="button"
           onClick={() => router.push('/apply/employment')}
@@ -59,7 +59,14 @@ export default function PanStep() {
         >
           <ArrowLeft size={20} />
         </button>
-        <span className={styles.stepFraction}>3 / 3</span>
+        <div className={styles.progressRow}>
+          <div className={styles.progressTrack}>
+            <span className={`${styles.seg} ${styles.segOn}`} />
+            <span className={`${styles.seg} ${styles.segOn}`} />
+            <span className={`${styles.seg} ${styles.segOn}`} />
+          </div>
+          <span className={styles.stepFraction}>3/3</span>
+        </div>
       </div>
 
       <div className={styles.header}>
@@ -91,6 +98,11 @@ export default function PanStep() {
               <p className={styles.errorText}>{errors.panNumber.message}</p>
             )}
           </div>
+
+          <p className={styles.secureNote}>
+            <Lock size={14} />
+            Secure &amp; Encrypted • Your data is protected
+          </p>
         </div>
 
         <div className={styles.actions}>
@@ -108,7 +120,6 @@ export default function PanStep() {
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Check your loan offers'}
-            {!isSubmitting && <ArrowRight size={16} />}
           </button>
         </div>
       </form>
