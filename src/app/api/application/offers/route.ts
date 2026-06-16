@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { calculateEMI } from '@/lib/financial';
+import { db } from '@/lib/db';
 
 const schema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/),
@@ -9,23 +10,6 @@ const schema = z.object({
   monthlyIncome: z.coerce.number().positive(),
 });
 
-function buildOffers(amount: number, income: number) {
-  const eligible = Math.min(amount, income * 10);
-  const base = [
-    { id: 1, lender: 'Partner A', rate: 10.49, tenure: 36, fee: '1.5%', color: '#0369a1' },
-    { id: 2, lender: 'Partner B', rate: 11.25, tenure: 24, fee: '2.0%', color: '#4338ca' },
-    { id: 3, lender: 'Partner C', rate: 12.00, tenure: 48, fee: '1.0%', color: '#059669' },
-  ];
-  return base
-    .map((o) => ({
-      ...o,
-      amount: eligible,
-      emi: Math.round(calculateEMI(eligible, o.rate, o.tenure)),
-      rateDisplay: `${o.rate}% p.a.`,
-      tenureDisplay: `${o.tenure} months`,
-    }));
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -33,7 +17,32 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
-    const offers = buildOffers(Number(result.data.loanAmount), Number(result.data.monthlyIncome));
+
+    const amount = Number(result.data.loanAmount);
+    const income = Number(result.data.monthlyIncome);
+
+    // Pull live lenders the applicant qualifies for, best-priority first.
+    const lenders = await db.lender.findMany({
+      where: { active: true, minIncome: { lte: income } },
+      orderBy: [{ priority: 'desc' }, { interestRate: 'asc' }],
+    });
+
+    const offers = lenders.map((l) => {
+      const eligible = Math.min(amount, income * l.maxMultiplier);
+      return {
+        id: l.id,
+        lender: l.name,
+        rate: l.interestRate,
+        tenure: l.tenureMonths,
+        fee: l.processingFee,
+        color: l.color,
+        amount: eligible,
+        emi: Math.round(calculateEMI(eligible, l.interestRate, l.tenureMonths)),
+        rateDisplay: `${l.interestRate}% p.a.`,
+        tenureDisplay: `${l.tenureMonths} months`,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       offers,

@@ -1,139 +1,105 @@
-// In-memory OTP store with auto-cleanup
-// Used directly when DATABASE_URL is not set (local dev); DB is used in production
+// OTP + rate-limit store — backed entirely by the database (Supabase/Postgres).
+// No in-memory fallback: serverless invocations don't share memory, so state
+// must live in the DB to be correct on Vercel.
 
-export const otpStore = new Map<string, {
-  otp: string;
-  expiresAt: number;
-  attempts: number;
-}>();
+import { db } from '@/lib/db';
 
-const HAS_DB = !!process.env.DATABASE_URL;
+// ── OTP sessions ────────────────────────────────────────────────────
 
 export async function saveOtpSession(mobile: string, otp: string, expiresAt: Date) {
-  if (HAS_DB) {
-    const { db } = await import('@/lib/db');
-    await db.otpSession.upsert({
-      where: { mobile },
-      update: { otp, expiresAt, attempts: 0 },
-      create: { mobile, otp, expiresAt },
-    });
-  } else {
-    otpStore.set(mobile, { otp, expiresAt: expiresAt.getTime(), attempts: 0 });
-  }
+  await db.otpSession.upsert({
+    where: { mobile },
+    update: { otp, expiresAt, attempts: 0 },
+    create: { mobile, otp, expiresAt },
+  });
 }
 
 export async function getOtpSession(mobile: string) {
-  if (HAS_DB) {
-    const { db } = await import('@/lib/db');
-    return db.otpSession.findUnique({ where: { mobile } });
-  }
-  const stored = otpStore.get(mobile);
-  if (!stored) return null;
-  return { otp: stored.otp, expiresAt: new Date(stored.expiresAt), attempts: stored.attempts };
+  return db.otpSession.findUnique({ where: { mobile } });
 }
 
 export async function incrementOtpAttempts(mobile: string, current: number) {
-  if (HAS_DB) {
-    const { db } = await import('@/lib/db');
-    await db.otpSession.update({ where: { mobile }, data: { attempts: current + 1 } });
-  } else {
-    const stored = otpStore.get(mobile);
-    if (stored) stored.attempts = current + 1;
-  }
+  await db.otpSession.update({
+    where: { mobile },
+    data: { attempts: current + 1 },
+  });
 }
 
 export async function deleteOtpSession(mobile: string) {
-  if (HAS_DB) {
-    const { db } = await import('@/lib/db');
-    try { await db.otpSession.delete({ where: { mobile } }); } catch { /* already deleted */ }
-  } else {
-    otpStore.delete(mobile);
+  try {
+    await db.otpSession.delete({ where: { mobile } });
+  } catch {
+    /* already deleted */
   }
 }
 
-export const rateLimitStore = new Map<string, {
-  count: number;
-  firstRequest: number;
-}>();
+// ── OTP audit log (was a dead table) ────────────────────────────────
 
-// Auto-cleanup every 5 minutes — prevents memory leak
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    
-    // Clean expired OTPs
-    for (const [key, value] of otpStore.entries()) {
-      if (now > value.expiresAt) {
-        otpStore.delete(key);
-      }
-    }
-    
-    // Clean expired rate limit entries (older than 10 minutes)
-    for (const [key, value] of rateLimitStore.entries()) {
-      if (now - value.firstRequest > 10 * 60 * 1000) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 5 * 60 * 1000); // Run every 5 minutes
+export async function logOtp(
+  mobile: string,
+  status: 'sent' | 'verified' | 'expired' | 'failed'
+) {
+  try {
+    await db.otpLog.create({ data: { mobile, status } });
+  } catch {
+    /* logging must never break the main flow */
+  }
 }
+
+// ── OTP generation ──────────────────────────────────────────────────
 
 export function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export function checkRateLimit(
-  mobile: string
-): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const windowMs = 10 * 60 * 1000;
-  const maxRequests = 3;
+// ── Rate limiting (DB-backed, serverless-safe) ──────────────────────
 
-  const existing = rateLimitStore.get(mobile);
-  
-  if (!existing || now - existing.firstRequest > windowMs) {
-    rateLimitStore.set(mobile, { count: 1, firstRequest: now });
+type RateResult = { allowed: boolean; retryAfter?: number };
+
+async function rateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): Promise<RateResult> {
+  const now = Date.now();
+  const existing = await db.rateLimit.findUnique({ where: { key } });
+
+  // No record yet, or the previous window has fully elapsed → start fresh.
+  if (!existing || now - existing.windowStart.getTime() > windowMs) {
+    await db.rateLimit.upsert({
+      where: { key },
+      update: { count: 1, windowStart: new Date(now) },
+      create: { key, count: 1, windowStart: new Date(now) },
+    });
     return { allowed: true };
   }
-  
+
   if (existing.count >= maxRequests) {
     const retryAfter = Math.ceil(
-      (existing.firstRequest + windowMs - now) / 1000
+      (existing.windowStart.getTime() + windowMs - now) / 1000
     );
     return { allowed: false, retryAfter };
   }
-  
-  existing.count += 1;
+
+  await db.rateLimit.update({
+    where: { key },
+    data: { count: existing.count + 1 },
+  });
   return { allowed: true };
 }
 
-// IP-based rate limiter for submit/contact routes
-const ipRateLimitStore = new Map<string, {
-  count: number;
-  firstRequest: number;
-}>();
+// Per-mobile OTP send limit: 3 per 10 minutes.
+export function checkRateLimit(mobile: string): Promise<RateResult> {
+  return rateLimit(`otp:${mobile}`, 3, 10 * 60 * 1000);
+}
 
+// Per-IP limit for submit/contact routes. `scope` keeps each route's bucket
+// separate so a submit and a contact from the same IP don't share a counter.
 export function checkIpRateLimit(
   ip: string,
   maxRequests = 5,
-  windowMinutes = 60
-): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const windowMs = windowMinutes * 60 * 1000;
-
-  const existing = ipRateLimitStore.get(ip);
-
-  if (!existing || now - existing.firstRequest > windowMs) {
-    ipRateLimitStore.set(ip, { count: 1, firstRequest: now });
-    return { allowed: true };
-  }
-
-  if (existing.count >= maxRequests) {
-    const retryAfter = Math.ceil(
-      (existing.firstRequest + windowMs - now) / 1000
-    );
-    return { allowed: false, retryAfter };
-  }
-
-  existing.count += 1;
-  return { allowed: true };
+  windowMinutes = 60,
+  scope = 'default'
+): Promise<RateResult> {
+  return rateLimit(`ip:${scope}:${ip}`, maxRequests, windowMinutes * 60 * 1000);
 }

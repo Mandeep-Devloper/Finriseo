@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "regions": ["bom1"],
-  "buildCommand": "prisma generate && next build",
+  "buildCommand": "prisma generate && prisma migrate deploy && next build",
   "env": {
     "NEXT_PUBLIC_APP_ENV": "production"
   }
