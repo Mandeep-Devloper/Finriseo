@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       ?? headersList.get('x-real-ip') 
       ?? 'unknown';
 
-    const ipCheck = checkIpRateLimit(ip, 3, 60); // 3 submits per hour per IP
+    const ipCheck = await checkIpRateLimit(ip, 3, 60, 'contact'); // 3 submits per hour per IP
     if (!ipCheck.allowed) {
       return NextResponse.json(
         { 

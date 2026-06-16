@@ -21,8 +21,12 @@ export function formatINR(value: number): string {
 }
 
 /**
- * Generate a unique reference ID for loan applications
+ * Generate a unique reference ID for loan applications.
+ * Combines a time component with random chars so two applications created in
+ * the same millisecond don't collide.
  */
 export function generateReferenceId(): string {
-  return `FIN${Date.now().toString().slice(-8)}`;
+  const time = Date.now().toString(36).slice(-5).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `FIN${time}${rand}`;
 }

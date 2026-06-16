@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Application {
@@ -23,6 +24,10 @@ model Application {
   source          String   @default("web")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([mobile])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OtpLog {
@@ -30,6 +35,9 @@ model OtpLog {
   mobile    String
   status    String   // sent | verified | expired | failed
   createdAt DateTime @default(now())
+
+  @@index([mobile])
+  @@index([createdAt])
 }
 
 model OtpSession {
@@ -51,4 +59,37 @@ model ContactMessage {
   message   String
   status    String   @default("unread")
   createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Serverless-safe rate limiting (replaces in-memory Maps).
+// One row per rate-limit key, e.g. "otp:9999999999" or "ip:1.2.3.4:submit".
+model RateLimit {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([windowStart])
+}
+
+// DB-driven loan offers (replaces hardcoded Partner A/B/C).
+model Lender {
+  id            Int      @id @default(autoincrement())
+  name          String
+  interestRate  Float    // annual % p.a.
+  tenureMonths  Int
+  processingFee String   // display string, e.g. "1.5%"
+  color         String   // accent color for the offer card
+  minIncome     Float    @default(0)     // minimum monthly income to qualify
+  maxMultiplier Float    @default(10)    // max loan = monthlyIncome * maxMultiplier
+  active        Boolean  @default(true)
+  priority      Int      @default(0)     // higher shows first
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([active])
 }

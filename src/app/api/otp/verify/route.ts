@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getOtpSession, incrementOtpAttempts, deleteOtpSession } from '../_otpStore';
+import { getOtpSession, incrementOtpAttempts, deleteOtpSession, logOtp } from '../_otpStore';
 
 const schema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/),
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     }
     if (Date.now() > stored.expiresAt.getTime()) {
       await deleteOtpSession(mobile);
+      await logOtp(mobile, 'expired');
       return NextResponse.json(
         { success: false, error: 'OTP expired. Request a new one.' },
         { status: 400 }
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     }
     if (stored.attempts >= 5) {
       await deleteOtpSession(mobile);
+      await logOtp(mobile, 'failed');
       return NextResponse.json(
         { success: false, error: 'Too many wrong attempts. Request a new OTP.' },
         { status: 429 }
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     await deleteOtpSession(mobile);
+    await logOtp(mobile, 'verified');
     return NextResponse.json({ success: true, verified: true });
   } catch {
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
