@@ -16,8 +16,6 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^6.4.1",
-    "firebase": "^12.13.0",
-    "firebase-admin": "^13.10.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.16.0",
     "next": "15.5.18",
