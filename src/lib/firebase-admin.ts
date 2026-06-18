@@ -8,17 +8,28 @@
 //   FIREBASE_CLIENT_EMAIL
 //   FIREBASE_PRIVATE_KEY   (keep the literal \n newlines from the JSON)
 
-import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, getApp, cert, type App } from 'firebase-admin/app';
+import { getAuth, type Auth } from 'firebase-admin/auth';
 
-const app = getApps().length
-  ? getApp()
-  : initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
+// IMPORTANT: initialize lazily. If we call cert()/initializeApp() at module
+// import time, `next build` evaluates it while "collecting page data" — when the
+// FIREBASE_* env vars aren't present — and crashes with
+// "Service account object must contain a string project_id property".
+// Deferring to first request keeps the build clean and only needs the env at
+// runtime.
 
-export const adminAuth = getAuth(app);
+function getAdminApp(): App {
+  if (getApps().length) return getApp();
+  return initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+/** Returns the Firebase Admin Auth instance, initializing the app on first use. */
+export function getAdminAuth(): Auth {
+  return getAuth(getAdminApp());
+}
