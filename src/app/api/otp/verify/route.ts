@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { adminAuth } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 import { logOtp } from '../_otpStore';
 
 // Firebase Phone Auth verifies the OTP on the client. Here we verify the
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     let decoded;
     try {
-      decoded = await adminAuth.verifyIdToken(idToken);
+      decoded = await getAdminAuth().verifyIdToken(idToken);
     } catch (err) {
       console.error(
         '[otp-verify] verifyIdToken FAILED',
