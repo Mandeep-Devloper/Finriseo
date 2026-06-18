@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step4Schema, Step4FormData } from '@/lib/validations';
+import { applicationService } from '@/lib/services';
 import styles from './page.module.css';
 
 export default function PanStep() {
@@ -34,10 +35,15 @@ export default function PanStep() {
     },
   });
 
-  const onSubmit: SubmitHandler<Step4FormData> = (data) => {
-    updateData({
-      panNumber: data.panNumber.toUpperCase(), // Ensure uppercase
-    });
+  const onSubmit: SubmitHandler<Step4FormData> = async (data) => {
+    const panNumber = data.panNumber.toUpperCase();
+    updateData({ panNumber });
+    if (applicationData.referenceId) {
+      await applicationService.updateApplication(applicationData.referenceId, {
+        panNumber,
+        currentStep: 'pan_verified',
+      });
+    }
     router.push('/apply/offers');
   };
 

@@ -14,6 +14,7 @@ const INITIAL_STATE: ApplicationData = {
   panNumber: '',
   selectedOffer: null,
   referenceId: '',
+  submitted: false,
 };
 
 // Safe fields — mobile and otpVerified included
@@ -29,6 +30,7 @@ const SESSION_SAFE_FIELDS: (keyof ApplicationData)[] = [
   'monthlyIncome',
   'salaryMode',
   'referenceId',
+  'submitted',
 ];
 
 // Restore saved progress from sessionStorage

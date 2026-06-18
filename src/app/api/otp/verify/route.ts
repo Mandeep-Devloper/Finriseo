@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getOtpSession, incrementOtpAttempts, deleteOtpSession, logOtp } from '../_otpStore';
+import { adminAuth } from '@/lib/firebase-admin';
+import { logOtp } from '../_otpStore';
 
+// Firebase Phone Auth verifies the OTP on the client. Here we verify the
+// resulting Firebase ID token and confirm its phone number matches the mobile
+// the user is applying with, so the server can trust the verification.
 const schema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/),
-  otp: z.string().length(6),
+  idToken: z.string().min(1),
 });
 
 export async function POST(req: NextRequest) {
@@ -15,41 +19,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
 
-    const { mobile, otp } = result.data;
-    const stored = await getOtpSession(mobile);
+    const { mobile, idToken } = result.data;
 
-    if (!stored) {
-      return NextResponse.json(
-        { success: false, error: 'OTP not found. Request a new one.' },
-        { status: 400 }
-      );
-    }
-    if (Date.now() > stored.expiresAt.getTime()) {
-      await deleteOtpSession(mobile);
-      await logOtp(mobile, 'expired');
-      return NextResponse.json(
-        { success: false, error: 'OTP expired. Request a new one.' },
-        { status: 400 }
-      );
-    }
-    if (stored.attempts >= 5) {
-      await deleteOtpSession(mobile);
+    let decoded;
+    try {
+      decoded = await adminAuth.verifyIdToken(idToken);
+    } catch {
       await logOtp(mobile, 'failed');
       return NextResponse.json(
-        { success: false, error: 'Too many wrong attempts. Request a new OTP.' },
-        { status: 429 }
+        { success: false, error: 'Could not verify OTP. Request a new one.' },
+        { status: 401 }
       );
     }
-    if (stored.otp !== otp) {
-      await incrementOtpAttempts(mobile, stored.attempts);
+
+    if (decoded.phone_number !== `+91${mobile}`) {
+      await logOtp(mobile, 'failed');
       return NextResponse.json(
-        { success: false, error: `Wrong OTP. ${5 - stored.attempts - 1} attempts left.` },
+        { success: false, error: 'Mobile number does not match the verified number.' },
         { status: 400 }
       );
     }
 
-    await deleteOtpSession(mobile);
-    await logOtp(mobile, 'verified');
+    // Fire-and-forget the audit log so the response isn't gated on a DB write
+    // (the verification itself is already done). logOtp swallows its own errors.
+    void logOtp(mobile, 'verified');
     return NextResponse.json({ success: true, verified: true });
   } catch {
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });

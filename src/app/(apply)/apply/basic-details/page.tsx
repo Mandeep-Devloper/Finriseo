@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step2Schema, Step2FormData } from '@/lib/validations';
+import { applicationService } from '@/lib/services';
 import styles from './page.module.css';
 
 export default function BasicDetailsStep() {
@@ -37,12 +38,20 @@ export default function BasicDetailsStep() {
     },
   });
 
-  const onSubmit = (data: Step2FormData) => {
+  const onSubmit = async (data: Step2FormData) => {
     updateData({
       loanAmount: data.loanAmount,
       email: data.email,
       pinCode: data.pinCode,
     });
+    if (applicationData.referenceId) {
+      await applicationService.updateApplication(applicationData.referenceId, {
+        loanAmount: data.loanAmount,
+        email: data.email,
+        pinCode: data.pinCode,
+        currentStep: 'basic_details',
+      });
+    }
     router.push('/apply/employment');
   };
 

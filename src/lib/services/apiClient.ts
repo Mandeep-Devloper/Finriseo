@@ -30,4 +30,6 @@ export const apiClient = {
   get: <T>(url: string) => request<T>(url),
   post: <T>(url: string, body: unknown) =>
     request<T>(url, { method: 'POST', body: JSON.stringify(body) }),
+  patch: <T>(url: string, body: unknown) =>
+    request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
 };

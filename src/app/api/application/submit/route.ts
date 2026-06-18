@@ -6,18 +6,21 @@ import { checkIpRateLimit } from '@/app/api/otp/_otpStore';
 import { headers } from 'next/headers';
 
 const schema = z.object({
+  referenceId: z.string().optional(),
   mobile: z.string().regex(/^[6-9]\d{9}$/),
   fullName: z.string().min(2),
+  email: z.string().email().optional(),
+  pinCode: z.string().regex(/^\d{6}$/).optional(),
   employmentType: z.string().min(1),
   monthlyIncome: z.coerce.number().positive(),
+  salaryMode: z.string().optional(),
   employer: z.string().optional(),
   experience: z.string().optional(),
   loanAmount: z.coerce.number().positive(),
   loanPurpose: z.string().optional(),
+  panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/).optional(),
   selectedOfferId: z.number().optional(),
 });
-
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,24 +48,40 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const referenceId = generateReferenceId();
-    await db.application.create({
-      data: {
-        referenceId,
-        mobile: result.data.mobile,
-        fullName: result.data.fullName,
-        employmentType: result.data.employmentType,
-        monthlyIncome: result.data.monthlyIncome,
-        employer: result.data.employer ?? null,
-        experience: result.data.experience ?? null,
-        loanAmount: result.data.loanAmount,
-        loanPurpose: result.data.loanPurpose ?? null,
-        selectedOfferId: result.data.selectedOfferId,
-        status: 'submitted',
-        source: 'web',
-      },
-    });
-    console.log(`[APPLICATION] ${referenceId} | Mobile: ${result.data.mobile}`);
+    const d = result.data;
+
+    const fieldData = {
+      mobile: d.mobile,
+      fullName: d.fullName,
+      email: d.email ?? null,
+      pinCode: d.pinCode ?? null,
+      employmentType: d.employmentType,
+      monthlyIncome: d.monthlyIncome,
+      salaryMode: d.salaryMode ?? null,
+      employer: d.employer ?? null,
+      experience: d.experience ?? null,
+      loanAmount: d.loanAmount,
+      loanPurpose: d.loanPurpose ?? null,
+      panNumber: d.panNumber ?? null,
+      selectedOfferId: d.selectedOfferId,
+      status: 'submitted',
+      currentStep: 'submitted',
+    };
+
+    let referenceId = d.referenceId;
+    const existing = referenceId
+      ? await db.application.findUnique({ where: { referenceId } })
+      : null;
+
+    if (existing) {
+      await db.application.update({ where: { referenceId: existing.referenceId }, data: fieldData });
+    } else {
+      // No draft found (funnel was skipped or referenceId got lost) — create fresh.
+      referenceId = generateReferenceId();
+      await db.application.create({ data: { referenceId, source: 'web', ...fieldData } });
+    }
+
+    console.log(`[APPLICATION] ${referenceId} | Mobile: ${d.mobile}`);
     return NextResponse.json({
       success: true,
       referenceId,
