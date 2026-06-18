@@ -8,9 +8,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Pencil } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step1Schema, Step1FormData } from '@/lib/validations';
+import type { ConfirmationResult } from 'firebase/auth';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useToast } from '@/components/ui/Toast';
-import { otpService } from '@/lib/services';
+import { otpService, applicationService } from '@/lib/services';
+import { sendFirebaseOtp, firebaseOtpError } from '@/lib/services/firebaseOtp';
 import styles from './page.module.css';
 
 export default function BasicInfoStep() {
@@ -32,6 +34,8 @@ export default function BasicInfoStep() {
   const [consentWhatsapp, setConsentWhatsapp] = useState(true);
   
   const hasAutoSent = React.useRef(false);
+  // Holds the in-flight Firebase Phone Auth session used to confirm the code.
+  const confirmationRef = React.useRef<ConfirmationResult | null>(null);
 
   useEffect(() => {
     if (applicationData.mobile && !applicationData.otpVerified && !hasAutoSent.current) {
@@ -68,42 +72,86 @@ export default function BasicInfoStep() {
   const handleSendOtp = async (values: Step1FormData) => {
     setIsLoading(true);
     setApiError('');
-    const { data, error } = await otpService.sendOtp(values.mobile);
-    setIsLoading(false);
-    if (error) { setApiError(error); return; }
-    if (process.env.NODE_ENV === 'development' && data?._devOtp) {
-      console.log('%c DEV OTP: ' + data._devOtp, 
-        'background: #16a34a; color: white; font-size: 16px; padding: 4px 8px;');
+    try {
+      confirmationRef.current = await sendFirebaseOtp(values.mobile);
+    } catch (err) {
+      setIsLoading(false);
+      setApiError(firebaseOtpError(err));
+      return;
     }
+    setIsLoading(false);
     updateData({ fullName: values.fullName });
     setCurrentMobile(values.mobile);
     setStep('otp');
+    setTimer(60);
   };
 
   const handleVerifyOtp = async (otp: string) => {
     setIsLoading(true);
     setOtpError('');
-    const { error } = await otpService.verifyOtp(currentMobile, otp);
+
+    if (!confirmationRef.current) {
+      setIsLoading(false);
+      setOtpError('Session expired. Please resend the OTP.');
+      return;
+    }
+
+    // Confirm the code with Firebase, then exchange the signed-in user for an
+    // ID token our server can verify.
+    let idToken: string;
+    try {
+      const credential = await confirmationRef.current.confirm(otp);
+      idToken = await credential.user.getIdToken();
+    } catch (err) {
+      setIsLoading(false);
+      setOtpError(firebaseOtpError(err));
+      return;
+    }
+
+    const { error } = await otpService.verifyToken(currentMobile, idToken);
+    if (error) { setIsLoading(false); setOtpError(error); return; }
+
+    // OTP is verified — mark the store and move to the next step immediately.
+    // We deliberately do NOT block navigation on the draft-row write below: a
+    // cold DB connection can take several seconds, and the user shouldn't wait
+    // for it just to see the next form.
     setIsLoading(false);
-    if (error) { setOtpError(error); return; }
     updateData({ mobile: currentMobile, otpVerified: true });
     router.push('/apply/basic-details');
+
+    // Create the draft Application row in the background so the lead is visible
+    // in the database from this step on. The referenceId lands in the store
+    // when it resolves; the next step's save reads it from there (and safely
+    // no-ops if the user submits before it arrives).
+    applicationService
+      .startApplication({
+        mobile: currentMobile,
+        fullName: applicationData.fullName || '',
+        referenceId: applicationData.referenceId || undefined,
+      })
+      .then(({ data: started }) => {
+        if (started?.referenceId) updateData({ referenceId: started.referenceId });
+      });
   };
 
   const handleResendOtp = async () => {
     if (timer > 0) return;
     setOtpError('');
-    const { error } = await otpService.resendOtp(currentMobile);
-    if (error) {
-      setOtpError(error);
-    } else {
-      setTimer(60);
-      showToast('OTP resent successfully', 'success');
+    try {
+      confirmationRef.current = await sendFirebaseOtp(currentMobile);
+    } catch (err) {
+      setOtpError(firebaseOtpError(err));
+      return;
     }
+    setTimer(60);
+    showToast('OTP resent successfully', 'success');
   };
 
   return (
     <div className={styles.container}>
+      {/* Invisible reCAPTCHA target required by Firebase Phone Auth. */}
+      <div id="recaptcha-container" />
+
       {/* Mobile image slot — shown on form step only; hidden on desktop */}
       {step === 'form' && (
         <div className={styles.mobileImageSlot}>

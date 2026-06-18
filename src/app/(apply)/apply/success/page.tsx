@@ -44,7 +44,10 @@ export default function SuccessStep() {
     const refId = applicationData.referenceId;
     const appData = { ...applicationData };
 
-    if (refId) {
+    // Only skip re-submitting if the final submit already succeeded before
+    // (e.g. user refreshed this page). A referenceId alone isn't enough —
+    // it now exists as soon as OTP is verified (draft application).
+    if (applicationData.submitted && refId) {
       setSavedRef(refId);
       setSavedOffer(offer);
       setApiStatus('success');
@@ -56,14 +59,19 @@ export default function SuccessStep() {
       setApiStatus('loading');
 
       const { data, error } = await applicationService.submitApplication({
+        referenceId: appData.referenceId,
         mobile: appData.mobile,
         fullName: appData.fullName,
+        email: appData.email,
+        pinCode: appData.pinCode,
         employmentType: appData.employmentType,
         monthlyIncome: appData.monthlyIncome,
+        salaryMode: appData.salaryMode,
         employer: appData.employer,
         experience: appData.experience,
         loanAmount: appData.loanAmount,
         loanPurpose: appData.loanPurpose,
+        panNumber: appData.panNumber,
         selectedOffer: offer,
       });
 
@@ -73,7 +81,7 @@ export default function SuccessStep() {
         return;
       }
 
-      updateData({ referenceId: data.referenceId });
+      updateData({ referenceId: data.referenceId, submitted: true });
       setSavedRef(data.referenceId);
       setSavedOffer(offer);
       trackEvent(EVENTS.APPLICATION_COMPLETE);

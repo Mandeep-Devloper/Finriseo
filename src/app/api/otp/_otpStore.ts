@@ -1,39 +1,15 @@
-// OTP + rate-limit store — backed entirely by the database (Supabase/Postgres).
-// No in-memory fallback: serverless invocations don't share memory, so state
-// must live in the DB to be correct on Vercel.
+// OTP audit log + rate-limiting — backed entirely by the database
+// (Supabase/Postgres). No in-memory fallback: serverless invocations don't
+// share memory, so state must live in the DB to be correct on Vercel.
+//
+// OTP generation/verification itself is handled by Firebase Phone Auth
+// (client-side) — see src/lib/services/firebaseOtp.ts — so this file no longer
+// stores OTP codes. It keeps the audit log and the IP rate limiter used by the
+// submit/contact routes.
 
 import { db } from '@/lib/db';
 
-// ── OTP sessions ────────────────────────────────────────────────────
-
-export async function saveOtpSession(mobile: string, otp: string, expiresAt: Date) {
-  await db.otpSession.upsert({
-    where: { mobile },
-    update: { otp, expiresAt, attempts: 0 },
-    create: { mobile, otp, expiresAt },
-  });
-}
-
-export async function getOtpSession(mobile: string) {
-  return db.otpSession.findUnique({ where: { mobile } });
-}
-
-export async function incrementOtpAttempts(mobile: string, current: number) {
-  await db.otpSession.update({
-    where: { mobile },
-    data: { attempts: current + 1 },
-  });
-}
-
-export async function deleteOtpSession(mobile: string) {
-  try {
-    await db.otpSession.delete({ where: { mobile } });
-  } catch {
-    /* already deleted */
-  }
-}
-
-// ── OTP audit log (was a dead table) ────────────────────────────────
+// ── OTP audit log ───────────────────────────────────────────────────
 
 export async function logOtp(
   mobile: string,
@@ -44,12 +20,6 @@ export async function logOtp(
   } catch {
     /* logging must never break the main flow */
   }
-}
-
-// ── OTP generation ──────────────────────────────────────────────────
-
-export function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // ── Rate limiting (DB-backed, serverless-safe) ──────────────────────
@@ -86,11 +56,6 @@ async function rateLimit(
     data: { count: existing.count + 1 },
   });
   return { allowed: true };
-}
-
-// Per-mobile OTP send limit: 3 per 10 minutes.
-export function checkRateLimit(mobile: string): Promise<RateResult> {
-  return rateLimit(`otp:${mobile}`, 3, 10 * 60 * 1000);
 }
 
 // Per-IP limit for submit/contact routes. `scope` keeps each route's bucket

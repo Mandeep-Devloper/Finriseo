@@ -13,14 +13,24 @@ model Application {
   referenceId     String   @unique
   mobile          String
   fullName        String
-  employmentType  String
-  monthlyIncome   Float
+  email           String?
+  pinCode         String?
+  employmentType  String?
+  monthlyIncome   Float?
+  salaryMode      String?
   employer        String?
   experience      String?
-  loanAmount      Float
+  loanAmount      Float?
   loanPurpose     String?
+  panNumber       String?
   selectedOfferId Int?
-  status          String   @default("submitted")
+  // Funnel position — lets you see exactly where a lead is/dropped off:
+  // otp_verified -> basic_details -> employment -> pan_verified -> submitted
+  currentStep     String   @default("otp_verified")
+  // Business pipeline status. Starts as "draft" (funnel in progress, pre-submission);
+  // becomes "submitted" once the user completes the final step, then moves through
+  // contacted -> docs_pending -> sent_to_lender -> approved -> disbursed / rejected.
+  status          String   @default("draft")
   source          String   @default("web")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

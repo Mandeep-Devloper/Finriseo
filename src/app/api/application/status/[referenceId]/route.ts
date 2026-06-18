@@ -12,6 +12,7 @@ const STEP_LABELS = [
 // currently "active". Everything before it is completed, everything after
 // is pending. `disbursed` (4) marks every step complete.
 const STATUS_TO_ACTIVE: Record<string, number> = {
+  draft: 0,
   submitted: 1,
   contacted: 1,
   docs_pending: 1,

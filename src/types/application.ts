@@ -20,6 +20,10 @@ export interface ApplicationData {
   // Results
   selectedOffer: LoanOffer | null;
   referenceId: string;
+  // True only once the final submit call has actually succeeded — distinct
+  // from referenceId existing, since referenceId is now set as soon as OTP
+  // is verified (draft application).
+  submitted: boolean;
 }
 
 export interface LoanOffer {

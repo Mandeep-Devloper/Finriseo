@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { useApplicationStore } from "@/store/applicationStore";
 import { step3Schema, Step3FormData } from "@/lib/validations";
 import { trackEvent, EVENTS } from '@/lib/analytics';
+import { applicationService } from '@/lib/services';
 import styles from "./page.module.css";
 
 export default function EmploymentStep() {
@@ -43,12 +44,20 @@ export default function EmploymentStep() {
 
   const selectedEmploymentType = watch("employmentType");
 
-  const onSubmit: SubmitHandler<Step3FormData> = (data) => {
+  const onSubmit: SubmitHandler<Step3FormData> = async (data) => {
     updateData({
       monthlyIncome: data.monthlyIncome,
       employmentType: data.employmentType,
       salaryMode: data.salaryMode,
     });
+    if (applicationData.referenceId) {
+      await applicationService.updateApplication(applicationData.referenceId, {
+        monthlyIncome: data.monthlyIncome,
+        employmentType: data.employmentType,
+        salaryMode: data.salaryMode,
+        currentStep: 'employment',
+      });
+    }
     trackEvent(EVENTS.EMPLOYMENT_SUBMITTED, { employmentType: data.employmentType });
     router.push("/apply/pan");
   };
