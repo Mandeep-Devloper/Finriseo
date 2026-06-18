@@ -41,6 +41,15 @@ export default function BasicInfoStep() {
     if (applicationData.mobile && !applicationData.otpVerified && !hasAutoSent.current) {
       hasAutoSent.current = true;
       setStep('otp');
+      // Only auto-send once per mobile per browser session. A page reload loses
+      // the in-memory confirmation but must NOT silently fire another (paid) SMS;
+      // in that case we show the OTP step with Resend available immediately.
+      const sentKey = `otp-auto-sent:${applicationData.mobile}`;
+      if (sessionStorage.getItem(sentKey)) {
+        setTimer(0);
+        return;
+      }
+      sessionStorage.setItem(sentKey, '1');
       handleSendOtp({ fullName: applicationData.fullName || '', mobile: applicationData.mobile, consent: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
