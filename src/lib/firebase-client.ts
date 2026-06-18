@@ -22,6 +22,24 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Diagnostic: surface which public Firebase config is actually loaded in the
+// browser so you can confirm the right project/domain is wired up. Flags any
+// missing NEXT_PUBLIC_FIREBASE_* values (the #1 cause of OTP silently failing).
+const missing = Object.entries(firebaseConfig)
+  .filter(([, v]) => !v)
+  .map(([k]) => k);
+if (missing.length) {
+  console.error(
+    '[firebase-client] Missing config keys:', missing,
+    '→ set the corresponding NEXT_PUBLIC_FIREBASE_* env vars (locally AND in Vercel).'
+  );
+} else {
+  console.info(
+    '[firebase-client] Initialized',
+    { projectId: firebaseConfig.projectId, authDomain: firebaseConfig.authDomain }
+  );
+}
+
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
