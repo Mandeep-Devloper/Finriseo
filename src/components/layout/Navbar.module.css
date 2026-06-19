@@ -228,8 +228,14 @@
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  /* dvh = the *visible* viewport (excludes the mobile browser toolbar), so the
+     menu never runs off-screen and the "Apply Now" button stays reachable.
+     The vh line is a fallback for browsers without dvh support. */
   max-height: calc(100vh - 100px);
+  max-height: calc(100dvh - 100px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -263,6 +269,10 @@
   text-decoration: none;
   margin-top: 8px;
   transition: background 0.2s ease;
+  /* Pin to the bottom of the scrollable menu so it's always tappable, even
+     when the link list overflows and scrolls. */
+  position: sticky;
+  bottom: 0;
 }
 
 .mobileCta:hover {

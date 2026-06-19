@@ -53,14 +53,9 @@ export const metadata: Metadata = {
     description:
       "Compare personal, business and education loan offers from 50+ RBI-registered NBFCs. Instant approval, zero paperwork, competitive rates.",
   },
-  icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-  },
+  // Icons are provided by the file-convention assets in src/app/
+  // (icon.svg, icon.png, apple-icon.png) — Next links them automatically.
+  // No explicit `icons` here so it can't override those.
   manifest: '/manifest.json',
   verification: {
     google: 'PASTE_YOUR_GSC_VERIFICATION_CODE_HERE',
