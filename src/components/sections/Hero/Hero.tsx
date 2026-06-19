@@ -50,6 +50,10 @@ export default function Hero() {
     defaultValues: {
       fullName: '',
       mobile: '',
+      // Consent is implicit via the "By proceeding…" disclaimer shown below the
+      // form. step1Schema requires consent===true, so without this default the
+      // landing-page submit silently fails validation and never navigates.
+      consent: true,
     }
   });
 

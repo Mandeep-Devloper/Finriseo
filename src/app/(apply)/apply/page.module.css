@@ -119,13 +119,22 @@
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg, 0.75rem);
   font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: var(--text-base, 1rem);
+  /* 16px minimum keeps iOS from zooming the page when the field is focused. */
+  font-size: max(16px, var(--text-base, 1rem));
   font-weight: 600;
   color: var(--gray-900);
+  -webkit-text-fill-color: var(--gray-900);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   letter-spacing: 1.5px;
   background: var(--white);
+}
+
+/* Keep autofilled values dark on a white field so they stay visible on mobile. */
+.input:-webkit-autofill {
+  -webkit-text-fill-color: var(--gray-900);
+  -webkit-box-shadow: 0 0 0 1000px var(--white) inset;
+  caret-color: var(--gray-900);
 }
 
 /* Inside the mobileInputWrapper the input has no own border */

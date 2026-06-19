@@ -30,7 +30,8 @@ export default function BasicInfoStep() {
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const [otpValue, setOtpValue] = useState('');
-  const [consentTerms, setConsentTerms] = useState(true);
+  // Terms / credit-bureau consent is mandatory to proceed, so it stays locked
+  // ON and cannot be unticked. WhatsApp consent below stays optional.
   const [consentWhatsapp, setConsentWhatsapp] = useState(true);
   
   const hasAutoSent = React.useRef(false);
@@ -250,6 +251,10 @@ export default function BasicInfoStep() {
             />
           </div>
 
+          {/* Surface send failures (e.g. auto-send on arrival from the landing
+              page) here too — otherwise the OTP screen looks silently broken. */}
+          {apiError && <p className={styles.errorText} role="alert">{apiError}</p>}
+
           <div className={styles.otpActions}>
             <button
               type="button"
@@ -267,8 +272,10 @@ export default function BasicInfoStep() {
               type="checkbox"
               id="consentTerms"
               className={styles.checkbox}
-              checked={consentTerms}
-              onChange={(e) => setConsentTerms(e.target.checked)}
+              checked
+              readOnly
+              // Locked ON — mandatory consent that the user cannot untick.
+              onClick={(e) => e.preventDefault()}
             />
             <label htmlFor="consentTerms" className={styles.consentText}>
               By proceeding, you agree to our <Link href="/terms" className={styles.link}>Terms &amp; Conditions</Link> and <Link href="/privacy-policy" className={styles.link}>Privacy Policy</Link>, and consent to us accessing your credit information from credit bureaus for processing your application.
@@ -291,8 +298,8 @@ export default function BasicInfoStep() {
           <button
             type="button"
             onClick={() => handleVerifyOtp(otpValue)}
-            className={`btn btn--cta btn--lg ${styles.submitBtn} ${(isLoading || otpValue.length !== 6 || !consentTerms) ? 'btn--disabled' : ''}`}
-            disabled={isLoading || otpValue.length !== 6 || !consentTerms}
+            className={`btn btn--cta btn--lg ${styles.submitBtn} ${(isLoading || otpValue.length !== 6) ? 'btn--disabled' : ''}`}
+            disabled={isLoading || otpValue.length !== 6}
           >
             {isLoading ? <><Loader2 size={18} className="spin" /> Verifying...</> : 'Continue to Verify'}
           </button>

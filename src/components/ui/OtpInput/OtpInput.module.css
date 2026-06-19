@@ -5,13 +5,19 @@
 
 .inputWrapper {
   display: flex;
-  gap: var(--sp-3, 0.75rem);
+  /* Gap shrinks on narrow phones so 6 boxes never overflow the screen. */
+  gap: clamp(0.35rem, 2.5vw, 0.75rem);
   justify-content: center;
+  width: 100%;
 }
 
 .input {
-  width: 52px;
+  /* Responsive width: fills available space down to small phones, capped at
+     52px on larger screens — fixes the OTP row overflowing on mobile. */
+  width: clamp(40px, 13vw, 52px);
+  min-width: 0;
   height: 56px;
+  flex: 0 1 52px;
   font-family: 'Bricolage Grotesque', sans-serif;
   font-size: var(--text-2xl, 1.5rem);
   text-align: center;

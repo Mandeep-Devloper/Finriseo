@@ -11,12 +11,14 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https://www.google-analytics.com;
-  connect-src 'self' 
-    https://www.google-analytics.com 
+  connect-src 'self'
+    https://www.google-analytics.com
     https://analytics.google.com
     https://identitytoolkit.googleapis.com
     https://securetoken.googleapis.com
-    https://www.googleapis.com;
+    https://www.googleapis.com
+    https://www.google.com
+    https://www.gstatic.com;
   frame-src 'self' 
     https://www.google.com 
     https://recaptcha.google.com;
