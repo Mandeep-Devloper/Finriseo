@@ -65,8 +65,9 @@
 
 .rotatingLine {
   display: block;
-  height: 1.15em;
-  overflow: hidden;
+  /* Auto-height so longer scripts (Telugu/Tamil/Hindi) wrap instead of being
+     clipped to a single fixed-height line. */
+  min-height: 1.15em;
 }
 
 .rotatingWord {
@@ -77,9 +78,9 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Allow wrapping so non-Latin translations never overflow the viewport. */
+  white-space: normal;
+  overflow-wrap: break-word;
   max-width: 100%;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
@@ -124,16 +125,28 @@
 .formInput {
   width: 100%;
   height: 50px;
-  background: rgba(255, 255, 255, 0.5);
+  background: #ffffff;
   border: 1.5px solid rgba(0, 0, 0, 0.05);
   border-radius: 12px;
   color: #0d1b0f;
-  font-size: 0.9375rem;
+  /* Force the typed value dark even when the browser autofills (otherwise the
+     value can render in the browser's autofill color and look invisible). */
+  -webkit-text-fill-color: #0d1b0f;
+  font-size: 1rem;
   padding: 0 16px;
   outline: none;
   transition: all 0.25s ease;
   font-family: 'Bricolage Grotesque', sans-serif;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Keep autofilled inputs white with dark text instead of the browser's
+   default yellow/blue tint that can hide the value on mobile. */
+.formInput:-webkit-autofill,
+.mobileInput:-webkit-autofill {
+  -webkit-text-fill-color: #0d1b0f;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  caret-color: #0d1b0f;
 }
 
 .formInput::placeholder {
@@ -197,12 +210,14 @@
 
 .mobileInput {
   flex: 1;
+  min-width: 0;
   height: 100%;
   background: transparent;
   border: none;
   outline: none;
   color: #0d1b0f;
-  font-size: 0.9375rem;
+  -webkit-text-fill-color: #0d1b0f;
+  font-size: 1rem;
   padding: 0 16px;
   font-family: 'Bricolage Grotesque', sans-serif;
 }

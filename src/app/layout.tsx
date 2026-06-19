@@ -41,14 +41,9 @@ export const metadata: Metadata = {
       "Compare personal, business and education loan offers from 50+ RBI-registered NBFCs. Instant approval, zero paperwork, competitive rates.",
     url: "https://finriseo.com",
     siteName: "Finriseo",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Finriseo Loan Comparison",
-      },
-    ],
+    // og:image is provided automatically by src/app/opengraph-image.tsx — the
+    // previous "/og-image.png" did not exist, which is why share/search
+    // previews fell back to a generic image.
     locale: "en_IN",
     type: "website",
   },
@@ -57,7 +52,6 @@ export const metadata: Metadata = {
     title: "Finriseo | Compare Loans from 50+ NBFCs",
     description:
       "Compare personal, business and education loan offers from 50+ RBI-registered NBFCs. Instant approval, zero paperwork, competitive rates.",
-    images: ["/og-image.png"],
   },
   icons: {
     icon: [
