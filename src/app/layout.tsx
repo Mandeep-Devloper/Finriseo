@@ -57,9 +57,8 @@ export const metadata: Metadata = {
   // (icon.svg, icon.png, apple-icon.png) — Next links them automatically.
   // No explicit `icons` here so it can't override those.
   manifest: '/manifest.json',
-  verification: {
-    google: 'PASTE_YOUR_GSC_VERIFICATION_CODE_HERE',
-  },
+  // Search Console is verified via DNS (Domain property), so no meta-tag
+  // verification is needed here.
 };
 
 export default function RootLayout({

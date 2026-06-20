@@ -48,9 +48,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://finriseo.com',
   },
-  verification: {
-    google: 'ADD_YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE_HERE',
-  },
 };
 
 export default function HomePage() {
