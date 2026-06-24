@@ -166,7 +166,7 @@ export default function BasicInfoStep() {
       {step === 'form' && (
         <div className={styles.mobileImageSlot}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/firststep.svg" alt="" className={styles.slotImage} />
+          <img src="/firststep.webp" alt="" width={900} height={520} decoding="async" className={styles.slotImage} />
         </div>
       )}
 

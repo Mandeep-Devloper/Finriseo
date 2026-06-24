@@ -50,14 +50,19 @@ model OtpLog {
   @@index([createdAt])
 }
 
-model OtpSession {
-  id        String   @id @default(cuid())
-  mobile    String   @unique
-  otp       String
-  expiresAt DateTime
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Append-only audit trail of application lifecycle events. Records the actor
+// (Firebase uid from the verified session) rather than any PII, so the log
+// itself stays PII-free. Written via a single service: src/lib/services/auditLog.ts
+model AuditLog {
+  id          String   @id @default(cuid())
+  referenceId String
+  actorUid    String?  // Firebase uid of the authenticated session, if known
+  action      String   // started | updated | submitted
+  lender      String?  // resulting lender routing (selected offer), on submit
+  createdAt   DateTime @default(now())
+
+  @@index([referenceId])
+  @@index([createdAt])
 }
 
 model ContactMessage {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { statusParamSchema as paramSchema } from '@/lib/validations';
 
 const STEP_LABELS = [
   'Application Received',
@@ -25,17 +27,28 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ referenceId: string }> }
 ) {
-  const { referenceId } = await params;
-  if (!referenceId?.startsWith('FIN')) {
+  let session;
+  try {
+    session = await requireSession();
+  } catch (err) {
+    if (err instanceof SessionError) return unauthorized();
+    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+  }
+
+  const parsed = paramSchema.safeParse(await params);
+  if (!parsed.success) {
     return NextResponse.json({ success: false, error: 'Invalid reference ID' }, { status: 400 });
   }
+  const { referenceId } = parsed.data;
 
   const application = await db.application.findUnique({
     where: { referenceId },
-    select: { referenceId: true, status: true, createdAt: true, updatedAt: true },
+    select: { referenceId: true, status: true, mobile: true, createdAt: true, updatedAt: true },
   });
 
-  if (!application) {
+  // 404 for both "missing" and "not owned" so the endpoint can't confirm which
+  // reference IDs exist for other users.
+  if (!application || application.mobile !== session.phone) {
     return NextResponse.json(
       { success: false, error: 'Application not found' },
       { status: 404 }

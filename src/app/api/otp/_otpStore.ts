@@ -9,6 +9,15 @@
 
 import { db } from '@/lib/db';
 
+// ── PII masking ─────────────────────────────────────────────────────
+// Never log raw phone numbers (or other PII). Keep enough to correlate
+// support cases without storing identifiable data in logs.
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 4) return '****';
+  return `${digits.slice(0, 2)}****${digits.slice(-2)}`;
+}
+
 // ── OTP audit log ───────────────────────────────────────────────────
 
 export async function logOtp(
@@ -67,4 +76,15 @@ export function checkIpRateLimit(
   scope = 'default'
 ): Promise<RateResult> {
   return rateLimit(`ip:${scope}:${ip}`, maxRequests, windowMinutes * 60 * 1000);
+}
+
+// Per-phone limit, complementing the per-IP one (the brief requires both):
+// a single phone shouldn't be able to hammer a route from rotating IPs.
+export function checkPhoneRateLimit(
+  phone: string,
+  maxRequests = 5,
+  windowMinutes = 60,
+  scope = 'default'
+): Promise<RateResult> {
+  return rateLimit(`phone:${scope}:${phone}`, maxRequests, windowMinutes * 60 * 1000);
 }

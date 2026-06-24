@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { db } from '@/lib/db';
 import { generateReferenceId } from '@/lib/financial';
-
-const schema = z.object({
-  mobile: z.string().regex(/^[6-9]\d{9}$/),
-  fullName: z.string().min(2),
-  referenceId: z.string().optional(),
-});
+import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { recordAudit } from '@/lib/services/auditLog';
+import { applicationStartSchema as schema } from '@/lib/validations';
 
 // Creates a draft Application row as soon as OTP is verified — this is what
 // makes a lead visible in the database from step 1, instead of only at final
@@ -15,6 +11,8 @@ const schema = z.object({
 // the same mobile, it just updates the name instead of creating a duplicate.
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireSession();
+
     const body = await req.json();
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -22,9 +20,16 @@ export async function POST(req: NextRequest) {
     }
     const { mobile, fullName, referenceId } = result.data;
 
+    // The owner is whoever the session says it is — never trust the posted
+    // mobile. Reject if it doesn't match the OTP-verified number.
+    if (mobile !== session.phone) {
+      return unauthorized();
+    }
+
     if (referenceId) {
       const existing = await db.application.findUnique({ where: { referenceId } });
-      if (existing && existing.mobile === mobile) {
+      // Only resume a draft the session actually owns.
+      if (existing && existing.mobile === session.phone) {
         await db.application.update({ where: { referenceId }, data: { fullName } });
         return NextResponse.json({ success: true, referenceId });
       }
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
     await db.application.create({
       data: {
         referenceId: newReferenceId,
-        mobile,
+        mobile: session.phone,
         fullName,
         status: 'draft',
         currentStep: 'otp_verified',
@@ -42,8 +47,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    void recordAudit({ referenceId: newReferenceId, actorUid: session.uid, action: 'started' });
     return NextResponse.json({ success: true, referenceId: newReferenceId });
-  } catch {
+  } catch (err) {
+    if (err instanceof SessionError) return unauthorized();
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }
