@@ -1,29 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { generateReferenceId } from '@/lib/financial';
 import { db } from '@/lib/db';
-import { checkIpRateLimit } from '@/app/api/otp/_otpStore';
+import { checkIpRateLimit, checkPhoneRateLimit, maskPhone } from '@/app/api/otp/_otpStore';
+import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { recordAudit } from '@/lib/services/auditLog';
+import { applicationSubmitSchema as schema } from '@/lib/validations';
 import { headers } from 'next/headers';
-
-const schema = z.object({
-  referenceId: z.string().optional(),
-  mobile: z.string().regex(/^[6-9]\d{9}$/),
-  fullName: z.string().min(2),
-  email: z.string().email().optional(),
-  pinCode: z.string().regex(/^\d{6}$/).optional(),
-  employmentType: z.string().min(1),
-  monthlyIncome: z.coerce.number().positive(),
-  salaryMode: z.string().optional(),
-  employer: z.string().optional(),
-  experience: z.string().optional(),
-  loanAmount: z.coerce.number().positive(),
-  loanPurpose: z.string().optional(),
-  panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/).optional(),
-  selectedOfferId: z.number().optional(),
-});
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireSession();
+
     const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')
       ?? headersList.get('x-real-ip')
@@ -40,15 +27,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const phoneCheck = await checkPhoneRateLimit(session.phone, 5, 60, 'submit'); // 5 per hour per phone
+    if (!phoneCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many submissions. Try again in ${Math.ceil((phoneCheck.retryAfter ?? 3600) / 60)} minutes.`
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const result = schema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Invalid data', details: result.error.flatten() },
+        { success: false, error: 'Invalid data' },
         { status: 400 }
       );
     }
     const d = result.data;
+
+    // The owner is the session, never the posted mobile.
+    if (d.mobile !== session.phone) {
+      return unauthorized();
+    }
 
     const fieldData = {
       mobile: d.mobile,
@@ -73,6 +76,11 @@ export async function POST(req: NextRequest) {
       ? await db.application.findUnique({ where: { referenceId } })
       : null;
 
+    // Refuse to overwrite a draft the session doesn't own.
+    if (existing && existing.mobile !== session.phone) {
+      return NextResponse.json({ success: false, error: 'Application not found' }, { status: 404 });
+    }
+
     if (existing) {
       await db.application.update({ where: { referenceId: existing.referenceId }, data: fieldData });
     } else {
@@ -81,13 +89,21 @@ export async function POST(req: NextRequest) {
       await db.application.create({ data: { referenceId, source: 'web', ...fieldData } });
     }
 
-    console.log(`[APPLICATION] ${referenceId} | Mobile: ${d.mobile}`);
+    void recordAudit({
+      referenceId: referenceId!,
+      actorUid: session.uid,
+      action: 'submitted',
+      lender: d.selectedOfferId != null ? String(d.selectedOfferId) : undefined,
+    });
+
+    console.log(`[APPLICATION] ${referenceId} | Mobile: ${maskPhone(session.phone)}`);
     return NextResponse.json({
       success: true,
       referenceId,
       message: 'Application submitted. Team will contact you in 10 minutes.',
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof SessionError) return unauthorized();
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }

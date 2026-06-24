@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { calculateEMI } from '@/lib/financial';
 import { db } from '@/lib/db';
-
-const schema = z.object({
-  mobile: z.string().regex(/^[6-9]\d{9}$/),
-  loanAmount: z.coerce.number().positive(),
-  employmentType: z.string().min(1),
-  monthlyIncome: z.coerce.number().positive(),
-});
+import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { offersSchema as schema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireSession();
+
     const body = await req.json();
     const result = schema.safeParse(body);
     if (!result.success) {
       return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
+    }
+
+    // Offers are computed from the posted figures; still ensure the request
+    // comes from the session that owns this phone, not an arbitrary caller.
+    if (result.data.mobile !== session.phone) {
+      return unauthorized();
     }
 
     const amount = Number(result.data.loanAmount);
@@ -48,7 +50,8 @@ export async function POST(req: NextRequest) {
       offers,
       disclaimer: 'Rates are indicative. Final offer subject to lender approval.',
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof SessionError) return unauthorized();
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }

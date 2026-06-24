@@ -2,15 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { checkIpRateLimit } from '@/app/api/otp/_otpStore';
+import { contactSchema } from '@/lib/validations';
 import { headers } from 'next/headers';
-
-const contactSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().regex(/^[6-9]\d{9}$/),
-  subject: z.string().min(5),
-  message: z.string().min(20).max(500),
-});
 
 export async function POST(req: NextRequest) {
   try {
