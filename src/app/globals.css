@@ -151,6 +151,11 @@ body {
   color: var(--color-text);
   background: var(--color-bg);
   line-height: 1.6;
+  /* Defence-in-depth against stray horizontal overflow on mobile. `clip`
+     (not `hidden`) does NOT create a scroll container, so it leaves
+     position: sticky (navbar, apply side panel) working. Root causes are
+     still fixed at the source; this only catches anything that slips through. */
+  overflow-x: clip;
 }
 h1,h2,h3,h4,h5,h6 {
   font-family: 'Bricolage Grotesque', sans-serif;

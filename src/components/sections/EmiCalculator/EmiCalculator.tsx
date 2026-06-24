@@ -5,10 +5,60 @@ import Link from 'next/link';
 import { calculateEMI, formatINR } from '@/lib/financial';
 import styles from './EmiCalculator.module.css';
 
+// Slider/input bounds — shared by the range sliders and the editable badges.
+const AMOUNT_MIN = 10000, AMOUNT_MAX = 1000000;
+const RATE_MIN = 8, RATE_MAX = 36;
+const TENURE_MIN = 3, TENURE_MAX = 60;
+
+const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
+
 export default function EmiCalculator() {
   const [amount, setAmount] = useState<number>(500000);
   const [rate, setRate] = useState<number>(10.5);
   const [tenure, setTenure] = useState<number>(36);
+
+  // Draft strings let the user freely type (incl. partial/empty values) in the
+  // editable badges; the numeric state stays clamped for the slider + maths,
+  // and the draft is normalized on blur.
+  const [amountStr, setAmountStr] = useState('500000');
+  const [rateStr, setRateStr] = useState('10.5');
+  const [tenureStr, setTenureStr] = useState('36');
+
+  // Loan amount (whole rupees)
+  const onAmountInput = (raw: string) => {
+    const cleaned = raw.replace(/[^\d]/g, '');
+    setAmountStr(cleaned);
+    if (cleaned) setAmount(clamp(Number(cleaned), AMOUNT_MIN, AMOUNT_MAX));
+  };
+  const onAmountBlur = () => {
+    const v = clamp(Number(amountStr || AMOUNT_MIN), AMOUNT_MIN, AMOUNT_MAX);
+    setAmount(v); setAmountStr(String(v));
+  };
+  const onAmountSlide = (v: number) => { setAmount(v); setAmountStr(String(v)); };
+
+  // Interest rate (allows one decimal)
+  const onRateInput = (raw: string) => {
+    const cleaned = raw.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
+    setRateStr(cleaned);
+    if (cleaned && cleaned !== '.') setRate(clamp(Number(cleaned), RATE_MIN, RATE_MAX));
+  };
+  const onRateBlur = () => {
+    const v = clamp(Number(rateStr || RATE_MIN), RATE_MIN, RATE_MAX);
+    setRate(v); setRateStr(String(v));
+  };
+  const onRateSlide = (v: number) => { setRate(v); setRateStr(String(v)); };
+
+  // Tenure (whole months)
+  const onTenureInput = (raw: string) => {
+    const cleaned = raw.replace(/[^\d]/g, '');
+    setTenureStr(cleaned);
+    if (cleaned) setTenure(clamp(Number(cleaned), TENURE_MIN, TENURE_MAX));
+  };
+  const onTenureBlur = () => {
+    const v = clamp(Number(tenureStr || TENURE_MIN), TENURE_MIN, TENURE_MAX);
+    setTenure(v); setTenureStr(String(v));
+  };
+  const onTenureSlide = (v: number) => { setTenure(v); setTenureStr(String(v)); };
 
   const emi = useMemo(() => calculateEMI(amount, rate, tenure), [amount, rate, tenure]);
   const totalPayable = emi * tenure;
@@ -34,18 +84,32 @@ export default function EmiCalculator() {
             
             <div className={styles.sliderGroup}>
               <div className={styles.sliderHeader}>
-                <label className={styles.label}>Loan Amount</label>
-                <div className={styles.valueBadge}>{formatINR(amount)}</div>
+                <label className={styles.label} htmlFor="emiAmount">Loan Amount</label>
+                <div className={styles.valueBadge}>
+                  <span className={styles.valuePrefix}>₹</span>
+                  <input
+                    id="emiAmount"
+                    type="text"
+                    inputMode="numeric"
+                    className={styles.valueInput}
+                    value={amountStr}
+                    onChange={(e) => onAmountInput(e.target.value)}
+                    onBlur={onAmountBlur}
+                    onFocus={(e) => e.target.select()}
+                    style={{ width: `${Math.max(amountStr.length, 1)}ch` }}
+                    aria-label="Loan amount in rupees"
+                  />
+                </div>
               </div>
               <input
                 type="range"
-                min={10000}
-                max={1000000}
+                min={AMOUNT_MIN}
+                max={AMOUNT_MAX}
                 step={10000}
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={(e) => onAmountSlide(Number(e.target.value))}
                 className={styles.rangeInput}
-                style={{ '--progress': `${((amount - 10000) / (1000000 - 10000)) * 100}%` } as React.CSSProperties}
+                style={{ '--progress': `${((amount - AMOUNT_MIN) / (AMOUNT_MAX - AMOUNT_MIN)) * 100}%` } as React.CSSProperties}
               />
               <div className={styles.sliderLimits}>
                 <span>₹10k</span>
@@ -55,18 +119,32 @@ export default function EmiCalculator() {
 
             <div className={styles.sliderGroup}>
               <div className={styles.sliderHeader}>
-                <label className={styles.label}>Interest Rate (p.a.)</label>
-                <div className={styles.valueBadge}>{rate}%</div>
+                <label className={styles.label} htmlFor="emiRate">Interest Rate (p.a.)</label>
+                <div className={styles.valueBadge}>
+                  <input
+                    id="emiRate"
+                    type="text"
+                    inputMode="decimal"
+                    className={styles.valueInput}
+                    value={rateStr}
+                    onChange={(e) => onRateInput(e.target.value)}
+                    onBlur={onRateBlur}
+                    onFocus={(e) => e.target.select()}
+                    style={{ width: `${Math.max(rateStr.length, 1)}ch` }}
+                    aria-label="Interest rate percent per annum"
+                  />
+                  <span className={styles.valueSuffix}>%</span>
+                </div>
               </div>
               <input
                 type="range"
-                min={8}
-                max={36}
+                min={RATE_MIN}
+                max={RATE_MAX}
                 step={0.5}
                 value={rate}
-                onChange={(e) => setRate(Number(e.target.value))}
+                onChange={(e) => onRateSlide(Number(e.target.value))}
                 className={styles.rangeInput}
-                style={{ '--progress': `${((rate - 8) / (36 - 8)) * 100}%` } as React.CSSProperties}
+                style={{ '--progress': `${((rate - RATE_MIN) / (RATE_MAX - RATE_MIN)) * 100}%` } as React.CSSProperties}
               />
               <div className={styles.sliderLimits}>
                 <span>8%</span>
@@ -76,18 +154,32 @@ export default function EmiCalculator() {
 
             <div className={styles.sliderGroup}>
               <div className={styles.sliderHeader}>
-                <label className={styles.label}>Tenure (Months)</label>
-                <div className={styles.valueBadge}>{tenure} Months</div>
+                <label className={styles.label} htmlFor="emiTenure">Tenure (Months)</label>
+                <div className={styles.valueBadge}>
+                  <input
+                    id="emiTenure"
+                    type="text"
+                    inputMode="numeric"
+                    className={styles.valueInput}
+                    value={tenureStr}
+                    onChange={(e) => onTenureInput(e.target.value)}
+                    onBlur={onTenureBlur}
+                    onFocus={(e) => e.target.select()}
+                    style={{ width: `${Math.max(tenureStr.length, 1)}ch` }}
+                    aria-label="Tenure in months"
+                  />
+                  <span className={styles.valueSuffix}>Months</span>
+                </div>
               </div>
               <input
                 type="range"
-                min={3}
-                max={60}
+                min={TENURE_MIN}
+                max={TENURE_MAX}
                 step={1}
                 value={tenure}
-                onChange={(e) => setTenure(Number(e.target.value))}
+                onChange={(e) => onTenureSlide(Number(e.target.value))}
                 className={styles.rangeInput}
-                style={{ '--progress': `${((tenure - 3) / (60 - 3)) * 100}%` } as React.CSSProperties}
+                style={{ '--progress': `${((tenure - TENURE_MIN) / (TENURE_MAX - TENURE_MIN)) * 100}%` } as React.CSSProperties}
               />
               <div className={styles.sliderLimits}>
                 <span>3m</span>

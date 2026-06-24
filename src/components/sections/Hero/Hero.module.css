@@ -9,7 +9,10 @@
 
 .heroGrid {
   display: grid;
-  grid-template-columns: 1fr 440px;
+  /* minmax(0, …) lets the text column shrink below its content's intrinsic
+     width. Without it, a long unbreakable word (e.g. Tamil/Telugu rotating
+     script) forces the track wider than the viewport and the hero clips. */
+  grid-template-columns: minmax(0, 1fr) 440px;
   gap: 60px;
   align-items: center;
   width: 100%;
@@ -24,15 +27,20 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  /* Allow this grid/flex child to shrink so long headings can't widen it. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .heroRight {
   align-self: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 900px) {
   .heroGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 100px 16px 60px;
     gap: 40px;
   }
@@ -61,6 +69,10 @@
   line-height: 1.1;
   letter-spacing: -0.03em;
   margin-bottom: var(--sp-6);
+  /* Never let the heading widen its column beyond the viewport. */
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .rotatingLine {
@@ -68,6 +80,8 @@
   /* Auto-height so longer scripts (Telugu/Tamil/Hindi) wrap instead of being
      clipped to a single fixed-height line. */
   min-height: 1.15em;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .rotatingWord {
@@ -78,9 +92,12 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  /* Allow wrapping so non-Latin translations never overflow the viewport. */
+  /* Indic scripts (Tamil/Telugu) are one long "word" with no ASCII break
+     points, so break-word isn't enough — `anywhere` lets them wrap to fit
+     instead of forcing the column (and the form beside it) past the viewport. */
   white-space: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   max-width: 100%;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
