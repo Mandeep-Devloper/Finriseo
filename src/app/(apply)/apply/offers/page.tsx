@@ -1,14 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, CheckCircle, Phone } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { formatINR } from '@/lib/financial';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 import { applicationService } from '@/lib/services';
+import { FindingOffers } from '@/components/sections/FindingOffers/FindingOffers';
 import type { LoanOffer } from '@/types/application';
 import styles from './page.module.css';
+
+// Phases of this screen:
+//   working → "Finding your best loan offers" interstitial while the real offers
+//             match (POST /api/application/offers) runs
+//   ready   → fetch succeeded; FindingOffers finishes its sequence, then calls
+//             onComplete to reveal the list
+//   list    → the selectable offer cards
+//   error   → the match failed/timed out; retry re-runs the fetch only
+type Phase = 'working' | 'ready' | 'list' | 'error';
 
 export default function OffersStep() {
   const router = useRouter();
@@ -17,54 +27,79 @@ export default function OffersStep() {
   const [mounted, setMounted] = useState(false);
   const [offers, setOffers] = useState<LoanOffer[]>([]);
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
-  
-  const [isLoading, setIsLoading] = useState(true);
+  const [phase, setPhase] = useState<Phase>('working');
   const [fetchError, setFetchError] = useState('');
+  // Bumped on every (re)run so the interstitial remounts and replays from step 1.
+  const [runId, setRunId] = useState(0);
+  const hasLoaded = useRef(false);
+
+  const { mobile, loanAmount, employmentType, monthlyIncome, selectedOffer } = applicationData;
+
+  // Runs the real offers match. The interstitial owns the animation timing; row 4
+  // ("Comparing loan offers") only checks off once this actually resolves.
+  const load = useCallback(async () => {
+    setRunId((id) => id + 1);
+    setFetchError('');
+    setPhase('working');
+
+    const { data, error } = await applicationService.fetchOffers({
+      mobile: mobile || '',
+      loanAmount: Number(loanAmount) || 300000,
+      employmentType: employmentType || '',
+      monthlyIncome: Number(monthlyIncome) || 0,
+    });
+
+    if (error || !data?.offers?.length) {
+      setFetchError(error ?? 'No offers available right now. Please try again.');
+      setPhase('error');
+      return;
+    }
+
+    setOffers(data.offers);
+    if (selectedOffer) {
+      setSelectedOfferId(selectedOffer.id);
+    }
+    setPhase('ready'); // FindingOffers will finish, then call onComplete → 'list'
+  }, [mobile, loanAmount, employmentType, monthlyIncome, selectedOffer]);
+
+  const revealList = useCallback(() => setPhase('list'), []);
 
   useEffect(() => {
     setMounted(true);
-    
-    // Security Route Guard
+    // Security route guard
     if (!applicationData.otpVerified) {
       router.replace('/apply');
       return;
     }
-
-    const load = async () => {
-      const { data, error } = await applicationService.fetchOffers({
-        mobile: applicationData.mobile || '',
-        loanAmount: Number(applicationData.loanAmount) || 300000,
-        employmentType: applicationData.employmentType || '',
-        monthlyIncome: Number(applicationData.monthlyIncome) || 0,
-      });
-      
-      if (error || !data?.offers?.length) {
-        setFetchError(error ?? 'No offers available. We will call you shortly.');
-      } else {
-        setOffers(data.offers);
-        // Pre-select if arriving via back button
-        if (applicationData.selectedOffer) {
-          setSelectedOfferId((applicationData.selectedOffer as LoanOffer).id);
-        }
-      }
-      setIsLoading(false);
-    };
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
     load();
-  }, [applicationData, router]);
+  }, [applicationData.otpVerified, router, load]);
 
   // Prevent flash before hydration / auth redirect
   if (!mounted || !applicationData.otpVerified) {
     return null;
   }
 
+  // Full-screen interstitial for everything that isn't the final list.
+  if (phase !== 'list') {
+    return (
+      <FindingOffers
+        key={runId}
+        offersReady={phase === 'ready'}
+        error={phase === 'error' ? fetchError : undefined}
+        onComplete={revealList}
+        onRetry={load}
+      />
+    );
+  }
+
   const handleProceed = () => {
     if (!selectedOfferId) return;
-    
-    const selected = offers.find(o => o.id === selectedOfferId);
+
+    const selected = offers.find((o) => o.id === selectedOfferId);
     if (selected) {
-      updateData({ 
-        selectedOffer: selected as unknown as import('@/types/application').LoanOffer,
-      });
+      updateData({ selectedOffer: selected });
       trackEvent(EVENTS.OFFER_SELECTED, { lender: selected.lender, rate: selected.rate });
       router.push('/apply/success');
     }
@@ -80,48 +115,9 @@ export default function OffersStep() {
       </div>
 
       <div className={styles.offersGrid}>
-        {isLoading && (
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingHeader}>
-              <h3 className={styles.loadingTitle}>Finding your best loan offers</h3>
-              <p className={styles.loadingSubtitle}>
-                <CheckCircle size={14} className={styles.greenText} /> No impact on your CIBIL score
-              </p>
-            </div>
-            
-            <div className={styles.checklist}>
-              <div className={`${styles.checklistItem} ${styles.itemDone} ${styles.delay1}`}>
-                <CheckCircle size={20} className={styles.checkIconLight} />
-                <span>Basic details verified</span>
-              </div>
-              <div className={`${styles.checklistItem} ${styles.itemDone} ${styles.delay2}`}>
-                <CheckCircle size={20} className={styles.checkIconLight} />
-                <span>Employment details verified</span>
-              </div>
-              <div className={`${styles.checklistItem} ${styles.itemDone} ${styles.delay3}`}>
-                <CheckCircle size={20} className={styles.checkIconLight} />
-                <span>PAN verified</span>
-              </div>
-              <div className={`${styles.checklistItem} ${styles.itemLoading} ${styles.delay4}`}>
-                <div className={styles.spinnerCircle}></div>
-                <span>Comparing loan offers...</span>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {fetchError && !isLoading && (
-          <div className={styles.disclaimerBox} style={{ background: 'var(--error-50)', color: 'var(--error-900)', border: '1px solid var(--error-200)', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-            <p style={{ margin: 0, fontWeight: 500 }}>{fetchError}</p>
-            <button className="btn btn--cta" onClick={() => router.push('/contact')}>
-              <Phone size={16} /> Contact Support
-            </button>
-          </div>
-        )}
-
-        {!isLoading && !fetchError && offers.map((offer, index) => {
+        {offers.map((offer, index) => {
           const isSelected = selectedOfferId === offer.id;
-          
+
           return (
             <button
               key={offer.id}
@@ -130,7 +126,7 @@ export default function OffersStep() {
               aria-pressed={isSelected}
             >
               {index === 0 && <div className={styles.recommendedBadge}>Recommended</div>}
-              
+
               <div className={styles.cardHeader}>
                 <div className={styles.lenderInfo}>
                   <div className={styles.lenderAvatar} style={{ backgroundColor: offer.color }}>
@@ -174,18 +170,18 @@ export default function OffersStep() {
       </div>
 
       <div className={styles.actions}>
-        <button 
-          type="button" 
+        <button
+          type="button"
           onClick={() => router.push('/apply/pan')}
           className={`btn btn--ghost ${styles.backBtn}`}
         >
           <ArrowLeft size={16} />
           Back
         </button>
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="btn btn--cta"
-          disabled={!selectedOfferId || isLoading || !!fetchError}
+          disabled={!selectedOfferId}
           onClick={handleProceed}
         >
           Accept & Proceed

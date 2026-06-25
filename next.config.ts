@@ -1,9 +1,20 @@
 import type { NextConfig } from 'next';
 
+// CSP notes (script-src):
+//   - 'unsafe-eval' has been REMOVED — GA4/gtag, GTM (standard tags), the
+//     Firebase Auth web SDK, and invisible reCAPTCHA do not require eval in our
+//     usage, so dropping it shrinks the XSS surface.
+//   - 'unsafe-inline' is RETAINED deliberately. This CSP is emitted as a static
+//     response header (next.config headers()), so there is no per-request nonce
+//     to authorize inline scripts. Next.js App Router injects inline
+//     hydration/bootstrap scripts, and GTM/GA + reCAPTCHA also use inline
+//     snippets; removing 'unsafe-inline' here would break hydration and the OTP
+//     flow. Moving to a nonce/hash-based policy needs middleware-based nonce
+//     propagation (a larger change) and is tracked as a follow-up.
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' 
-    https://www.googletagmanager.com 
+  script-src 'self' 'unsafe-inline'
+    https://www.googletagmanager.com
     https://www.google-analytics.com
     https://www.gstatic.com
     https://www.google.com

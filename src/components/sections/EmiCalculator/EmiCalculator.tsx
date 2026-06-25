@@ -11,6 +11,7 @@ const RATE_MIN = 8, RATE_MAX = 36;
 const TENURE_MIN = 3, TENURE_MAX = 60;
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
+const formatIndian = (n: number) => new Intl.NumberFormat('en-IN').format(n);
 
 export default function EmiCalculator() {
   const [amount, setAmount] = useState<number>(500000);
@@ -24,6 +25,10 @@ export default function EmiCalculator() {
   const [rateStr, setRateStr] = useState('10.5');
   const [tenureStr, setTenureStr] = useState('36');
 
+  // Which badge is being edited. While editing, the badge shows raw digits;
+  // when idle it shows the polished formatted value (₹5,00,000 etc.).
+  const [editing, setEditing] = useState<'amount' | 'rate' | 'tenure' | null>(null);
+
   // Loan amount (whole rupees)
   const onAmountInput = (raw: string) => {
     const cleaned = raw.replace(/[^\d]/g, '');
@@ -32,7 +37,7 @@ export default function EmiCalculator() {
   };
   const onAmountBlur = () => {
     const v = clamp(Number(amountStr || AMOUNT_MIN), AMOUNT_MIN, AMOUNT_MAX);
-    setAmount(v); setAmountStr(String(v));
+    setAmount(v); setAmountStr(String(v)); setEditing(null);
   };
   const onAmountSlide = (v: number) => { setAmount(v); setAmountStr(String(v)); };
 
@@ -44,7 +49,7 @@ export default function EmiCalculator() {
   };
   const onRateBlur = () => {
     const v = clamp(Number(rateStr || RATE_MIN), RATE_MIN, RATE_MAX);
-    setRate(v); setRateStr(String(v));
+    setRate(v); setRateStr(String(v)); setEditing(null);
   };
   const onRateSlide = (v: number) => { setRate(v); setRateStr(String(v)); };
 
@@ -56,9 +61,14 @@ export default function EmiCalculator() {
   };
   const onTenureBlur = () => {
     const v = clamp(Number(tenureStr || TENURE_MIN), TENURE_MIN, TENURE_MAX);
-    setTenure(v); setTenureStr(String(v));
+    setTenure(v); setTenureStr(String(v)); setEditing(null);
   };
   const onTenureSlide = (v: number) => { setTenure(v); setTenureStr(String(v)); };
+
+  // Values shown in the badges: formatted when idle, raw while editing.
+  const amountDisplay = editing === 'amount' ? amountStr : formatIndian(amount);
+  const rateDisplay = editing === 'rate' ? rateStr : String(rate);
+  const tenureDisplay = editing === 'tenure' ? tenureStr : String(tenure);
 
   const emi = useMemo(() => calculateEMI(amount, rate, tenure), [amount, rate, tenure]);
   const totalPayable = emi * tenure;
@@ -92,11 +102,11 @@ export default function EmiCalculator() {
                     type="text"
                     inputMode="numeric"
                     className={styles.valueInput}
-                    value={amountStr}
+                    value={amountDisplay}
                     onChange={(e) => onAmountInput(e.target.value)}
                     onBlur={onAmountBlur}
-                    onFocus={(e) => e.target.select()}
-                    style={{ width: `${Math.max(amountStr.length, 1)}ch` }}
+                    onFocus={(e) => { setEditing('amount'); setAmountStr(String(amount)); e.target.select(); }}
+                    style={{ width: `${Math.max(amountDisplay.length, 1)}ch` }}
                     aria-label="Loan amount in rupees"
                   />
                 </div>
@@ -126,14 +136,14 @@ export default function EmiCalculator() {
                     type="text"
                     inputMode="decimal"
                     className={styles.valueInput}
-                    value={rateStr}
+                    value={rateDisplay}
                     onChange={(e) => onRateInput(e.target.value)}
                     onBlur={onRateBlur}
-                    onFocus={(e) => e.target.select()}
-                    style={{ width: `${Math.max(rateStr.length, 1)}ch` }}
+                    onFocus={(e) => { setEditing('rate'); setRateStr(String(rate)); e.target.select(); }}
+                    style={{ width: `${Math.max(rateDisplay.length, 1)}ch` }}
                     aria-label="Interest rate percent per annum"
                   />
-                  <span className={styles.valueSuffix}>%</span>
+                  <span className={`${styles.valueSuffix} ${styles.valueSuffixTight}`}>%</span>
                 </div>
               </div>
               <input
@@ -161,11 +171,11 @@ export default function EmiCalculator() {
                     type="text"
                     inputMode="numeric"
                     className={styles.valueInput}
-                    value={tenureStr}
+                    value={tenureDisplay}
                     onChange={(e) => onTenureInput(e.target.value)}
                     onBlur={onTenureBlur}
-                    onFocus={(e) => e.target.select()}
-                    style={{ width: `${Math.max(tenureStr.length, 1)}ch` }}
+                    onFocus={(e) => { setEditing('tenure'); setTenureStr(String(tenure)); e.target.select(); }}
+                    style={{ width: `${Math.max(tenureDisplay.length, 1)}ch` }}
                     aria-label="Tenure in months"
                   />
                   <span className={styles.valueSuffix}>Months</span>
