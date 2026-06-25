@@ -49,7 +49,6 @@ function resetVerifier(): void {
  * On failure the reCAPTCHA verifier is reset so a retry/resend works.
  */
 export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResult> {
-  console.info('[firebase-otp] Sending OTP to', `+91${mobile}`);
   try {
     const result = await signInWithPhoneNumber(auth, `+91${mobile}`, getVerifier());
     console.info('[firebase-otp] SMS dispatched OK — confirmation session ready.');

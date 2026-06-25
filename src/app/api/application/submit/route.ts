@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { checkIpRateLimit, checkPhoneRateLimit, maskPhone } from '@/app/api/otp/_otpStore';
 import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/services/auditLog';
+import { resolveSubmission } from '@/lib/services/eligibility';
 import { applicationSubmitSchema as schema } from '@/lib/validations';
 import { headers } from 'next/headers';
 
@@ -53,6 +54,19 @@ export async function POST(req: NextRequest) {
       return unauthorized();
     }
 
+    // Never trust the client's loanAmount / selectedOfferId as authoritative.
+    // Re-derive them from the live Lender table: clamp the amount to what the
+    // applicant is actually eligible for, and reject an offer they don't qualify
+    // for (tampering). Same logic that produced the offers they saw.
+    const resolved = await resolveSubmission({
+      loanAmount: d.loanAmount,
+      monthlyIncome: d.monthlyIncome,
+      selectedOfferId: d.selectedOfferId,
+    });
+    if (!resolved.ok) {
+      return NextResponse.json({ success: false, error: resolved.error }, { status: 400 });
+    }
+
     const fieldData = {
       mobile: d.mobile,
       fullName: d.fullName,
@@ -63,10 +77,10 @@ export async function POST(req: NextRequest) {
       salaryMode: d.salaryMode ?? null,
       employer: d.employer ?? null,
       experience: d.experience ?? null,
-      loanAmount: d.loanAmount,
+      loanAmount: resolved.loanAmount,
       loanPurpose: d.loanPurpose ?? null,
       panNumber: d.panNumber ?? null,
-      selectedOfferId: d.selectedOfferId,
+      selectedOfferId: resolved.selectedOfferId,
       status: 'submitted',
       currentStep: 'submitted',
     };
@@ -93,7 +107,7 @@ export async function POST(req: NextRequest) {
       referenceId: referenceId!,
       actorUid: session.uid,
       action: 'submitted',
-      lender: d.selectedOfferId != null ? String(d.selectedOfferId) : undefined,
+      lender: resolved.selectedOfferId != null ? String(resolved.selectedOfferId) : undefined,
     });
 
     console.log(`[APPLICATION] ${referenceId} | Mobile: ${maskPhone(session.phone)}`);

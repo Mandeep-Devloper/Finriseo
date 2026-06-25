@@ -1,0 +1,240 @@
+/* Finding-offers interstitial — white, premium, mobile-first.
+   Brand: forest green #1A5C32 / #1A8A45, mint #E4F4EA, near-black text.
+   The four rows resolve one-by-one: pending ring → spinning ring → mint tick. */
+
+.screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  width: 100%;
+  background: #ffffff;
+  padding: var(--sp-8, 2rem) var(--sp-5, 1.25rem);
+  animation: foFade 0.4s ease-out;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+}
+
+.logo {
+  height: 34px;
+  width: auto;
+  color: #0a2e1a;
+  margin-bottom: var(--sp-8, 2rem);
+}
+
+.headline {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(1.35rem, 5.5vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #111827;
+  margin: 0 0 var(--sp-3, 0.75rem);
+  transition: color 0.3s ease;
+}
+
+.subline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  color: #1a5c32;
+  margin: 0 0 var(--sp-7, 1.75rem);
+}
+
+.shieldIcon {
+  color: #1a8a45;
+  flex-shrink: 0;
+}
+
+/* ── Checklist ── */
+.list {
+  list-style: none;
+  margin: 0 0 var(--sp-8, 2rem);
+  padding: 0;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 0.75rem);
+  padding: var(--sp-4, 1rem) var(--sp-3, 0.75rem);
+  border-bottom: 1px solid #eef1f0;
+  text-align: left;
+  border-radius: 12px;
+  transition: background-color 0.4s ease, opacity 0.4s ease;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row_done {
+  background-color: transparent;
+  opacity: 1;
+}
+
+/* Soft mint highlight on the row currently being worked. */
+.row_active {
+  background-color: #f3faf5;
+  opacity: 1;
+}
+
+.row_pending {
+  opacity: 0.5;
+}
+
+/* ── Status icon ── */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+}
+
+/* Pending: faint empty ring. */
+.icon_pending {
+  border: 2px solid #d7e6dd;
+  background: transparent;
+}
+
+/* Active: transparent host for the spinning ring. */
+.icon_active {
+  border: none;
+  background: transparent;
+}
+
+/* Done: filled mint circle with a forest-green tick. */
+.icon_done {
+  border: none;
+  background: #e4f4ea;
+  color: #1a5c32;
+}
+
+/* Active row: a ring that spins round and round continuously (never stuck). The
+   whole SVG rotates a full 360° per turn; when the row completes it flips to a
+   full mint circle + tick. One turn ≈ STEP_MS (850ms) so in the normal case the
+   tick lands right after a complete round. */
+.ring {
+  width: 28px;
+  height: 28px;
+  transform-origin: 50% 50%;
+  animation: foSpin 0.85s linear infinite;
+}
+
+.ringTrack {
+  fill: none;
+  stroke: #e4f4ea;
+  stroke-width: 3;
+}
+
+.ringArc {
+  fill: none;
+  stroke: #1a8a45;
+  stroke-width: 3;
+  stroke-linecap: round;
+  /* 2 * π * r (r=16) ≈ 100.53 — show ~70% of the ring as the spinning arc. */
+  stroke-dasharray: 70 100.53;
+}
+
+/* The tick pops in cleanly when a step completes. */
+.checkPop {
+  animation: foPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.label {
+  font-size: var(--text-base, 1rem);
+  font-weight: 600;
+  color: #111827;
+  transition: color 0.35s ease;
+}
+
+.row_pending .label {
+  color: #9ca3af;
+}
+
+.row_active .label {
+  color: #1a5c32;
+}
+
+.reassurance {
+  font-size: var(--text-xs, 0.75rem);
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Error state ── */
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4, 1rem);
+  width: 100%;
+  margin: var(--sp-4, 1rem) 0 0;
+}
+
+.errorIcon {
+  color: #b91c1c;
+}
+
+.errorText {
+  font-size: var(--text-base, 1rem);
+  color: #374151;
+  margin: 0;
+  max-width: 300px;
+}
+
+.retryBtn {
+  margin-top: var(--sp-2, 0.5rem);
+  min-width: 160px;
+}
+
+@keyframes foFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes foSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes foPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Reduced-motion: keep the step-by-step resolution (it's not large motion) but
+   drop the continuous spin and the pop — rows still tick through in sequence. */
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .checkPop {
+    animation: none;
+  }
+  .ring {
+    animation: none; /* no continuous rotation */
+  }
+  .ringArc {
+    stroke-dasharray: none; /* show a full, complete ring instead of an arc */
+  }
+  .row,
+  .icon,
+  .label,
+  .headline {
+    transition: none;
+  }
+}

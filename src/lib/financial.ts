@@ -20,13 +20,20 @@ export function formatINR(value: number): string {
   }).format(value);
 }
 
+// Unambiguous uppercase alphanumeric alphabet for reference IDs.
+const REF_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
 /**
  * Generate a unique reference ID for loan applications.
- * Combines a time component with random chars so two applications created in
- * the same millisecond don't collide.
+ * Uses a CSPRNG (Web Crypto `getRandomValues`, available in both Node and the
+ * browser — so this file stays safe to import from client components) instead
+ * of `Math.random()` + a predictable timestamp. Produces `FIN` + 9 random
+ * chars, which matches statusParamSchema's `^FIN[A-Z0-9]{6,12}$`.
  */
 export function generateReferenceId(): string {
-  const time = Date.now().toString(36).slice(-5).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `FIN${time}${rand}`;
+  const bytes = new Uint8Array(9);
+  globalThis.crypto.getRandomValues(bytes);
+  let id = '';
+  for (const b of bytes) id += REF_ALPHABET[b % REF_ALPHABET.length];
+  return `FIN${id}`;
 }

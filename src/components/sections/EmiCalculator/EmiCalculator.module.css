@@ -39,6 +39,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--sp-3, 0.75rem);
 }
 
 .label {
@@ -46,14 +47,18 @@
   font-weight: 700;
   color: var(--gray-800);
   font-size: var(--text-base, 1rem);
+  line-height: 1.25;
 }
 
 .valueBadge {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: flex-end;
   gap: 1px;
+  /* Uniform-ish width so the three badges line up as a tidy column on the right. */
+  min-width: 108px;
   background-color: var(--white);
-  padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+  padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
   border-radius: var(--radius-full);
   font-weight: 700;
   color: var(--green-700);
@@ -83,7 +88,15 @@
   padding: 0;
   margin: 0;
   min-width: 1ch;
-  max-width: 8ch;
+  max-width: 10ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide the number-spinner just in case a browser shows one. */
+.valueInput::-webkit-outer-spin-button,
+.valueInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .valuePrefix,
@@ -94,8 +107,17 @@
   white-space: nowrap;
 }
 
+.valuePrefix {
+  margin-right: 1px;
+}
+
 .valueSuffix {
-  margin-left: 3px;
+  margin-left: 4px;
+}
+
+/* "%" sits tight against the number (e.g. 31%), unlike "Months". */
+.valueSuffixTight {
+  margin-left: 1px;
 }
 
 .rangeInput {
@@ -251,4 +273,37 @@
 .applyBtn {
   width: 100%;
   text-align: center;
+}
+
+/* ── Mobile polish ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .calculatorBox {
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--radius-xl, 1rem);
+  }
+
+  .controlsCol {
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .resultsCol {
+    padding: var(--sp-5, 1.25rem);
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  /* Slightly smaller label so it sits on one line beside the value badge. */
+  .label {
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .valueBadge {
+    min-width: 100px;
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+  }
+
+  .chartWrapper {
+    width: 180px;
+    height: 180px;
+  }
 }

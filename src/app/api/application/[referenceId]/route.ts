@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { db } from '@/lib/db';
 import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/services/auditLog';
+import { checkDualRateLimit } from '@/app/api/otp/_otpStore';
 import { applicationPatchSchema as schema } from '@/lib/validations';
 
 // Progressive save — called after each apply step so the lead's data is
@@ -12,6 +14,19 @@ export async function PATCH(
 ) {
   try {
     const session = await requireSession();
+
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') ?? headersList.get('x-real-ip') ?? 'unknown';
+    // High limit: progressive-save fires after each step (and on edits/retries),
+    // so the ceiling must clear normal funnel use while still blocking abuse.
+    const rate = await checkDualRateLimit({ ip, phone: session.phone, maxRequests: 120, windowMinutes: 60, scope: 'patch' });
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many requests. Try again in ${Math.ceil((rate.retryAfter ?? 3600) / 60)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     const { referenceId } = await params;
     const body = await req.json();
     const result = schema.safeParse(body);

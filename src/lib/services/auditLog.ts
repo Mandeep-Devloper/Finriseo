@@ -25,7 +25,17 @@ export async function recordAudit(entry: {
         lender: entry.lender ?? null,
       },
     });
-  } catch {
-    /* auditing must never break the main flow */
+  } catch (err) {
+    // Auditing must never break the main flow, so we still swallow the error —
+    // but we log a warning so a missing table or failed write is *visible*
+    // (a silent no-op previously hid the un-migrated AuditLog table). The audit
+    // entry carries no PII (uid + referenceId + action only), so it is safe to
+    // surface here; we still log only the error code/message, not request data.
+    console.warn('[audit] write failed (non-fatal)', {
+      action: entry.action,
+      referenceId: entry.referenceId,
+      code: (err as { code?: string })?.code,
+      message: (err as { message?: string })?.message,
+    });
   }
 }

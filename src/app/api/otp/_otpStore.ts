@@ -88,3 +88,18 @@ export function checkPhoneRateLimit(
 ): Promise<RateResult> {
   return rateLimit(`phone:${scope}:${phone}`, maxRequests, windowMinutes * 60 * 1000);
 }
+
+// Convenience: enforce per-IP AND per-phone limits for an authenticated route in
+// one call. Returns the first check that fails (so the caller can surface its
+// retryAfter), or an allowed result when both pass.
+export async function checkDualRateLimit(opts: {
+  ip: string;
+  phone: string;
+  maxRequests: number;
+  windowMinutes: number;
+  scope: string;
+}): Promise<RateResult> {
+  const ipCheck = await checkIpRateLimit(opts.ip, opts.maxRequests, opts.windowMinutes, opts.scope);
+  if (!ipCheck.allowed) return ipCheck;
+  return checkPhoneRateLimit(opts.phone, opts.maxRequests, opts.windowMinutes, opts.scope);
+}
