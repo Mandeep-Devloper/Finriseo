@@ -8,7 +8,7 @@ import {
   inMemoryPersistence,
   signOut,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase-client';
+import { getClientAuth } from '@/lib/firebase-client';
 import styles from './login.module.css';
 
 // Admin login. The Firebase client SDK verifies email/password and returns an ID
@@ -28,6 +28,7 @@ export default function AdminLoginPage() {
     if (loading) return;
     setError(null);
     setLoading(true);
+    const auth = getClientAuth();
     try {
       await setPersistence(auth, inMemoryPersistence);
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
