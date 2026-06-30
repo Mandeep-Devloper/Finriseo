@@ -35,11 +35,22 @@ export async function logOtp(
 
 type RateResult = { allowed: boolean; retryAfter?: number };
 
+// Opportunistic cleanup so the RateLimit table doesn't grow unbounded — no cron
+// required. Every window we use is <= 60 min, so rows untouched for 24h are
+// definitely stale. Runs on ~2% of calls, fire-and-forget: never blocks or fails
+// a request.
+function maybePruneRateLimits(): void {
+  if (Math.random() > 0.02) return;
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  void db.rateLimit.deleteMany({ where: { windowStart: { lt: cutoff } } }).catch(() => {});
+}
+
 async function rateLimit(
   key: string,
   maxRequests: number,
   windowMs: number
 ): Promise<RateResult> {
+  maybePruneRateLimits();
   const now = Date.now();
   const existing = await db.rateLimit.findUnique({ where: { key } });
 

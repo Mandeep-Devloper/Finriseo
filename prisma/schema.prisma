@@ -32,12 +32,66 @@ model Application {
   // contacted -> docs_pending -> sent_to_lender -> approved -> disbursed / rejected.
   status          String   @default("draft")
   source          String   @default("web")
+  // Admin/DSA pipeline fields (set from the admin panel, never the borrower flow):
+  assignedToId    String?  // owning agent (→ AdminUser); null = unassigned
+  // The lender the DSA actually routed to / that disbursed. Distinct from
+  // selectedOfferId (the offer the BORROWER picked in the funnel) — the admin
+  // may route to a different lender. Feeds Phase 4 commission (× commissionRate).
+  chosenLenderId  Int?
+  disbursedAmount Float?
+  disbursedAt     DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  assignedTo   AdminUser? @relation("AssignedApplications", fields: [assignedToId], references: [id])
+  chosenLender Lender?    @relation(fields: [chosenLenderId], references: [id])
+  notes        Note[]
 
   @@index([mobile])
   @@index([status])
   @@index([createdAt])
+  @@index([assignedToId])
+}
+
+// Internal admin notes on an application. Author is an AdminUser; the body may
+// contain free text, so Notes are admin-only and never exposed to borrowers.
+model Note {
+  id            String   @id @default(cuid())
+  applicationId String
+  authorId      String
+  body          String
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  author      AdminUser  @relation("AuthoredNotes", fields: [authorId], references: [id])
+
+  @@index([applicationId])
+}
+
+// Admin panel users. Separate from borrowers entirely: admins authenticate with
+// Firebase Email/Password (never phone OTP). Role + active here are the SERVER
+// source of truth for authorization — the Firebase account only proves identity.
+// firebaseUid links to the Firebase Auth user; email is the business identity.
+model AdminUser {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  firebaseUid String    @unique
+  name        String
+  role        Role      @default(AGENT)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+
+  // Back-relations (populated as later phases add the columns).
+  auditEntries         AuditLog[]    @relation("AdminAuditActor")
+  assignedApplications Application[] @relation("AssignedApplications")
+  authoredNotes        Note[]        @relation("AuthoredNotes")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  AGENT
 }
 
 model OtpLog {
@@ -55,14 +109,35 @@ model OtpLog {
 // itself stays PII-free. Written via a single service: src/lib/services/auditLog.ts
 model AuditLog {
   id          String   @id @default(cuid())
-  referenceId String
+  referenceId String   // borrower application referenceId, OR the target id for
+                       // non-application admin actions (disambiguated by targetType)
   actorUid    String?  // Firebase uid of the authenticated session, if known
-  action      String   // started | updated | submitted
+  action      String   // borrower: started|updated|submitted · admin: e.g.
+                       // view_detail|status_change|assign|note|export|lender_*|user_*
   lender      String?  // resulting lender routing (selected offer), on submit
+  // Admin-action fields (nullable — borrower-flow rows leave these unset):
+  actorAdminId String? // FK → AdminUser, set when an admin performed the action
+  targetType   String? // "application" | "lender" | "admin_user" | "contact"
   createdAt   DateTime @default(now())
+
+  actorAdmin  AdminUser? @relation("AdminAuditActor", fields: [actorAdminId], references: [id])
 
   @@index([referenceId])
   @@index([createdAt])
+  @@index([actorAdminId])
+}
+
+// Singleton app settings (always id = 1). Business info shown across the panel,
+// plus a default commission rate used as a FALLBACK in dashboard commission
+// estimates when a lender has no commissionRate of its own.
+model AppSetting {
+  id                    Int      @id @default(1)
+  businessName          String?
+  supportEmail          String?
+  supportPhone          String?
+  address               String?
+  defaultCommissionRate Float?
+  updatedAt             DateTime @updatedAt
 }
 
 model ContactMessage {
@@ -103,8 +178,23 @@ model Lender {
   maxMultiplier Float    @default(10)    // max loan = monthlyIncome * maxMultiplier
   active        Boolean  @default(true)
   priority      Int      @default(0)     // higher shows first
+  // ── Admin-managed eligibility / commercials (Phase 3) ──
+  // All additive + nullable/defaulted so existing rows and the offers engine
+  // behave exactly as before until an admin sets a value.
+  logoUrl         String?            // lender logo (display)
+  interestRateMax Float?             // upper bound of a display rate range; interestRate is the "from" rate (drives EMI)
+  minAmount       Float?             // absolute minimum loan this lender funds
+  maxAmount       Float?             // absolute maximum loan (capped on top of income × maxMultiplier)
+  minAge          Int?               // stored for management; NOT enforced (funnel collects no age)
+  maxAge          Int?               // stored for management; NOT enforced
+  maxFoir         Float?             // stored for management; NOT enforced (no obligations collected)
+  employmentTypes String[] @default([]) // [] = any employment; else borrower's employmentType must be in this list
+  loanTypes       String[] @default([]) // loan products this lender serves (display / optional filtering)
+  commissionRate  Float?             // % of disbursed amount → Phase 4 commission estimates
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  applications Application[] // applications this lender disbursed/handled
 
   @@index([active])
 }

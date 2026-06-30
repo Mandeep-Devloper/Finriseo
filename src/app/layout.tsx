@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Mono } from "next/font/google";
+import { DM_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { GoogleAnalytics } from '@/components/ui/Analytics/GoogleAnalytics';
@@ -9,6 +9,15 @@ const dmMono = DM_Mono({
   weight: ['400', '500'],
   display: 'swap',
   variable: '--font-mono',
+});
+
+// Inter powers the admin panel's body/data text (headings stay Bricolage
+// Grotesque). Exposed as a CSS variable so only the admin styles consume it —
+// the marketing site is unaffected.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export const viewport: Viewport = {
@@ -67,7 +76,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmMono.variable}`}>
+    <html lang="en" className={`${dmMono.variable} ${inter.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

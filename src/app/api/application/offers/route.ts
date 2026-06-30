@@ -38,7 +38,11 @@ export async function POST(req: NextRequest) {
 
     // Pull live lenders the applicant qualifies for, best-priority first, and
     // build the display offers — same logic the submit route re-validates against.
-    const lenders = await getEligibleLenders(income);
+    const lenders = await getEligibleLenders({
+      monthlyIncome: income,
+      employmentType: result.data.employmentType,
+      loanAmount: amount,
+    });
     const offers = buildOffers(lenders, amount, income);
 
     return NextResponse.json({

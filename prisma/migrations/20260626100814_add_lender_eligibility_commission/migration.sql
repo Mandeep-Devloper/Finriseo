@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "Lender" ADD COLUMN     "commissionRate" DOUBLE PRECISION,
+ADD COLUMN     "employmentTypes" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "interestRateMax" DOUBLE PRECISION,
+ADD COLUMN     "loanTypes" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "logoUrl" TEXT,
+ADD COLUMN     "maxAge" INTEGER,
+ADD COLUMN     "maxAmount" DOUBLE PRECISION,
+ADD COLUMN     "maxFoir" DOUBLE PRECISION,
+ADD COLUMN     "minAge" INTEGER,
+ADD COLUMN     "minAmount" DOUBLE PRECISION;
