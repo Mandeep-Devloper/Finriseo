@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     const resolved = await resolveSubmission({
       loanAmount: d.loanAmount,
       monthlyIncome: d.monthlyIncome,
+      employmentType: d.employmentType,
       selectedOfferId: d.selectedOfferId,
     });
     if (!resolved.ok) {

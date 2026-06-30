@@ -1,0 +1,298 @@
+.wrap {
+  max-width: 1200px;
+}
+
+.head {
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  font-family: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+
+.sub {
+  font-size: 0.9rem;
+  color: var(--ink-500);
+  margin-top: 0.25rem;
+}
+
+.agentCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9px;
+  background: var(--forest-900);
+  color: var(--forest-50);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.agentCta:hover { background: var(--forest-700); }
+
+/* ── KPI cards ── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpi {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  background: var(--pure-white);
+  border: 1px solid var(--ink-100);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+
+.kpiIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--forest-50);
+  color: var(--forest-700);
+  flex-shrink: 0;
+}
+
+.kpiValue {
+  font-family: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  line-height: 1.1;
+}
+
+.kpiLabel {
+  font-size: 0.8rem;
+  color: var(--ink-600);
+  margin-top: 0.15rem;
+}
+
+.kpiSub {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  margin-top: 0.1rem;
+}
+
+/* ── Charts grid ── */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: var(--pure-white);
+  border: 1px solid var(--ink-100);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+
+.spanWide {
+  grid-column: 1 / -1;
+}
+
+.cardTitle {
+  font-family: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+.cardHint {
+  font-size: 0.75rem;
+  color: var(--ink-400);
+  margin-bottom: 0.5rem;
+}
+
+.empty {
+  font-size: 0.85rem;
+  color: var(--ink-400);
+  padding: 0.5rem 0;
+}
+
+/* ── Bar lists ── */
+.bars {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 120px 1fr 36px;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.barLabel {
+  font-size: 0.8rem;
+  color: var(--ink-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  height: 9px;
+  background: var(--ink-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  min-width: 2px;
+}
+
+.tone_forest { background: var(--forest-500); }
+.tone_blue { background: #2f6fed; }
+.tone_gold { background: var(--gold-500); }
+
+.barValue {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-700);
+  text-align: right;
+}
+
+/* ── Funnel ── */
+.funnel {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.funnelRow {
+  display: grid;
+  grid-template-columns: 80px 1fr 42px;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.funnelLabel {
+  font-size: 0.8rem;
+  color: var(--ink-600);
+}
+
+.funnelTrack {
+  background: var(--ink-100);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.funnelFill {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.25rem 0.5rem;
+  background: var(--forest-600);
+  color: var(--forest-50);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.funnelPct {
+  font-size: 0.78rem;
+  color: var(--ink-500);
+  text-align: right;
+}
+
+/* ── Line chart ── */
+.lineChart {
+  margin-top: 0.5rem;
+}
+
+.lineSvg {
+  width: 100%;
+  height: 180px;
+  display: block;
+}
+
+.lineFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  margin-top: 0.4rem;
+}
+
+.lineTotal {
+  font-weight: 600;
+  color: var(--ink-600);
+}
+
+/* ── Activity ── */
+.activity {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.activityRow {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.activityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--forest-300);
+  margin-top: 0.4rem;
+  flex-shrink: 0;
+}
+
+.activityBody {
+  min-width: 0;
+}
+
+.activityAction {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-800);
+}
+
+.activityRef {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  color: var(--forest-700);
+  text-decoration: none;
+  margin-left: 0.4rem;
+}
+
+.activityRef:hover { text-decoration: underline; }
+
+.activityMeta {
+  font-size: 0.74rem;
+  color: var(--ink-400);
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 880px) {
+  .charts { grid-template-columns: 1fr; }
+}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PIPELINE_STATUSES } from '@/lib/admin/pipeline';
 
 // Step 1: Full Name + Mobile
 export const step1Schema = z.object({
@@ -107,12 +108,103 @@ export const statusParamSchema = z.object({
   referenceId: z.string().regex(/^FIN[A-Z0-9]{6,12}$/),
 });
 
+// POST /api/admin/auth/login — the client signs in with Firebase Email/Password
+// and posts the resulting ID token; the server verifies it + checks AdminUser.
+export const adminLoginSchema = z.object({
+  idToken: z.string().min(1),
+});
+
+// ── Admin: application mutations ────────────────────────────────────
+// PATCH /api/admin/applications/[referenceId] — discriminated by `op` so each
+// action validates its own payload (and the route role-gates each `op`).
+export const adminApplicationPatchSchema = z.discriminatedUnion('op', [
+  z.object({
+    op: z.literal('status'),
+    status: z.enum(PIPELINE_STATUSES),
+  }),
+  z.object({
+    op: z.literal('assign'),
+    // null clears the assignment (unassign).
+    assignedToId: z.string().min(1).nullable(),
+  }),
+  z.object({
+    op: z.literal('disbursement'),
+    chosenLenderId: z.number().int().positive(),
+    disbursedAmount: z.coerce.number().positive(),
+    disbursedAt: z.coerce.date(),
+  }),
+]);
+
+// POST /api/admin/applications/[referenceId]/notes
+export const adminNoteSchema = z.object({
+  body: z.string().trim().min(1, 'Note cannot be empty').max(2000),
+});
+
+// ── Admin: lender CRUD ──────────────────────────────────────────────
+// The client sends numbers as numbers and null for cleared optional fields, so
+// these don't coerce. Core fields are required for create; update is partial
+// (so an active-only toggle, or any subset, is valid).
+const lenderBase = z.object({
+  name: z.string().trim().min(1).max(100),
+  interestRate: z.number().positive().max(100),         // "from" rate, drives EMI
+  interestRateMax: z.number().positive().max(100).nullable().optional(),
+  tenureMonths: z.number().int().positive().max(600),
+  processingFee: z.string().trim().min(1).max(50),       // display string, e.g. "1.5%"
+  color: z.string().trim().regex(/^#?[0-9a-fA-F]{3,8}$/).max(20),
+  minIncome: z.number().min(0),
+  maxMultiplier: z.number().positive().max(100),
+  minAmount: z.number().positive().nullable().optional(),
+  maxAmount: z.number().positive().nullable().optional(),
+  minAge: z.number().int().min(18).max(100).nullable().optional(),
+  maxAge: z.number().int().min(18).max(100).nullable().optional(),
+  maxFoir: z.number().positive().max(100).nullable().optional(),
+  employmentTypes: z.array(z.string().min(1)).default([]),
+  loanTypes: z.array(z.string().min(1)).default([]),
+  commissionRate: z.number().min(0).max(100).nullable().optional(),
+  priority: z.number().int().min(0).max(1000).default(0),
+  active: z.boolean().default(true),
+  logoUrl: z.string().url().max(500).nullable().optional(),
+});
+
+export const adminLenderCreateSchema = lenderBase;
+export const adminLenderUpdateSchema = lenderBase.partial();
+
+// ── Admin: settings ─────────────────────────────────────────────────
+// Client sends null for cleared fields, numbers as numbers.
+export const adminSettingsSchema = z.object({
+  businessName: z.string().trim().max(120).nullable().optional(),
+  supportEmail: z.string().trim().email().max(160).nullable().optional(),
+  supportPhone: z.string().trim().max(20).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
+  defaultCommissionRate: z.number().min(0).max(100).nullable().optional(),
+});
+
+// ── Admin: team (RBAC) ──────────────────────────────────────────────
+const adminRole = z.enum(['SUPER_ADMIN', 'ADMIN', 'AGENT']);
+
+// POST /api/admin/team — invite a new admin/agent.
+export const adminInviteSchema = z.object({
+  email: z.string().trim().email().max(160),
+  name: z.string().trim().min(2).max(120),
+  role: adminRole,
+});
+
+// PATCH /api/admin/team/[id] — change role and/or active.
+export const adminUserUpdateSchema = z
+  .object({
+    role: adminRole.optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((v) => v.role !== undefined || v.active !== undefined, {
+    message: 'Nothing to update',
+  });
+
 // POST /api/contact
 export const contactSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(160),
   phone: mobile,
-  subject: z.string().min(5),
+  subject: z.string().min(5).max(150),
   message: z.string().min(20).max(500),
 });
 
