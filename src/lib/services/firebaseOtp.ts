@@ -12,7 +12,7 @@ import {
   signInWithPhoneNumber,
   type ConfirmationResult,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase-client';
+import { getClientAuth } from '@/lib/firebase-client';
 
 // The reCAPTCHA element id rendered by the apply page.
 const RECAPTCHA_CONTAINER = 'recaptcha-container';
@@ -21,7 +21,7 @@ let verifier: RecaptchaVerifier | null = null;
 
 function getVerifier(): RecaptchaVerifier {
   if (!verifier) {
-    verifier = new RecaptchaVerifier(auth, RECAPTCHA_CONTAINER, {
+    verifier = new RecaptchaVerifier(getClientAuth(), RECAPTCHA_CONTAINER, {
       size: 'invisible',
     });
   }
@@ -50,7 +50,7 @@ function resetVerifier(): void {
  */
 export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResult> {
   try {
-    const result = await signInWithPhoneNumber(auth, `+91${mobile}`, getVerifier());
+    const result = await signInWithPhoneNumber(getClientAuth(), `+91${mobile}`, getVerifier());
     console.info('[firebase-otp] SMS dispatched OK — confirmation session ready.');
     return result;
   } catch (err) {
