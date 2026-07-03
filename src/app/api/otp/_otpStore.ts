@@ -51,30 +51,29 @@ async function rateLimit(
   windowMs: number
 ): Promise<RateResult> {
   maybePruneRateLimits();
-  const now = Date.now();
-  const existing = await db.rateLimit.findUnique({ where: { key } });
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - windowMs);
 
-  // No record yet, or the previous window has fully elapsed → start fresh.
-  if (!existing || now - existing.windowStart.getTime() > windowMs) {
-    await db.rateLimit.upsert({
-      where: { key },
-      update: { count: 1, windowStart: new Date(now) },
-      create: { key, count: 1, windowStart: new Date(now) },
-    });
-    return { allowed: true };
-  }
+  // Fixed-window counter as ONE atomic statement (insert-or-increment with a
+  // window reset), so two concurrent requests can never both read the same
+  // count and slip past the limit — the read-check-write version had exactly
+  // that race. The id is only used on the insert arm; conflicts key on `key`.
+  const [row] = await db.$queryRaw<{ count: number; windowStart: Date }[]>`
+    INSERT INTO "RateLimit" ("id", "key", "count", "windowStart", "updatedAt")
+    VALUES (${crypto.randomUUID()}, ${key}, 1, ${now}, ${now})
+    ON CONFLICT ("key") DO UPDATE SET
+      "count"       = CASE WHEN "RateLimit"."windowStart" <= ${cutoff} THEN 1 ELSE "RateLimit"."count" + 1 END,
+      "windowStart" = CASE WHEN "RateLimit"."windowStart" <= ${cutoff} THEN ${now} ELSE "RateLimit"."windowStart" END,
+      "updatedAt"   = ${now}
+    RETURNING "count", "windowStart"
+  `;
 
-  if (existing.count >= maxRequests) {
+  if (row.count > maxRequests) {
     const retryAfter = Math.ceil(
-      (existing.windowStart.getTime() + windowMs - now) / 1000
+      (row.windowStart.getTime() + windowMs - now.getTime()) / 1000
     );
     return { allowed: false, retryAfter };
   }
-
-  await db.rateLimit.update({
-    where: { key },
-    data: { count: existing.count + 1 },
-  });
   return { allowed: true };
 }
 
