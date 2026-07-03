@@ -8,6 +8,15 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ── Data retention (documented policy — enforce before/at launch) ──
+// - Application: borrower PII (name, mobile, email, PAN). Retain while the
+//   lead is active; define a purge window for stale drafts (e.g. drop `draft`
+//   rows with no activity after 90 days) and for rejected/closed leads per the
+//   privacy policy.
+// - OtpLog / RateLimit: operational only. RateLimit self-prunes (>24h rows);
+//   OtpLog should be pruned on a schedule (nothing needs it past ~90 days).
+// - AuditLog: append-only and deliberately PII-free — retain long-term.
+// - ContactMessage: contains contact PII; prune resolved messages periodically.
 model Application {
   id              String   @id @default(cuid())
   referenceId     String   @unique
@@ -22,6 +31,12 @@ model Application {
   experience      String?
   loanAmount      Float?
   loanPurpose     String?
+  // TODO(compliance): PAN is stored in plaintext. Supabase encrypts at the
+  // disk level, but PAN is sensitive enough to justify column-level
+  // encryption (pgcrypto/pgsodium or app-side AES via a KMS-held key) before
+  // scale. Until then its exposure surface is deliberately minimal: excluded
+  // from sessionStorage, CSV exports, and all logs; visible only on the
+  // audited admin detail view.
   panNumber       String?
   selectedOfferId Int?
   // Funnel position — lets you see exactly where a lead is/dropped off:
