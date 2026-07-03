@@ -10,9 +10,23 @@
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  signInWithCustomToken,
   type ConfirmationResult,
 } from 'firebase/auth';
 import { getClientAuth } from '@/lib/firebase-client';
+
+// ── DEV-ONLY OTP bypass ──────────────────────────────────────────────
+// Firebase blocks Phone Auth SMS on the free Spark plan. When the bypass is
+// on, sendFirebaseOtp() skips the SMS and returns a stand-in confirmation
+// whose confirm(code) accepts the fixed dev code, then performs a REAL
+// sign-in via a server-minted custom token (/api/otp/dev-bypass) — so the
+// rest of the flow (ID token, /api/otp/verify, session cookie) is untouched.
+// Both conditions are compile-time constants: in a production build this is
+// `false` and the branch is dead code.
+export const OTP_DEV_BYPASS =
+  process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_OTP_DEV_BYPASS === '1';
+export const OTP_DEV_BYPASS_CODE = '123456';
 
 // The reCAPTCHA element id rendered by the apply page.
 const RECAPTCHA_CONTAINER = 'recaptcha-container';
@@ -49,6 +63,12 @@ function resetVerifier(): void {
  * On failure the reCAPTCHA verifier is reset so a retry/resend works.
  */
 export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResult> {
+  if (OTP_DEV_BYPASS) {
+    console.info(
+      `[firebase-otp] DEV BYPASS active — no SMS sent. Enter OTP ${OTP_DEV_BYPASS_CODE}.`
+    );
+    return devBypassConfirmation(mobile);
+  }
   try {
     const result = await signInWithPhoneNumber(getClientAuth(), `+91${mobile}`, getVerifier());
     console.info('[firebase-otp] SMS dispatched OK — confirmation session ready.');
@@ -58,6 +78,37 @@ export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResul
     logFirebaseDiagnostic(err);
     throw err;
   }
+}
+
+/**
+ * Stand-in ConfirmationResult for the dev bypass. confirm(code) checks the
+ * fixed dev code, then swaps the SMS proof for a server-minted custom token
+ * and signs in with it for real — producing a genuine ID token that carries
+ * the phone_number claim the server verifies.
+ */
+function devBypassConfirmation(mobile: string): ConfirmationResult {
+  return {
+    verificationId: 'dev-bypass',
+    confirm: async (code: string) => {
+      if (code !== OTP_DEV_BYPASS_CODE) {
+        throw Object.assign(new Error('Invalid dev OTP'), {
+          code: 'auth/invalid-verification-code',
+        });
+      }
+      const res = await fetch('/api/otp/dev-bypass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.customToken) {
+        throw Object.assign(new Error('Dev bypass mint failed'), {
+          code: 'auth/internal-error',
+        });
+      }
+      return signInWithCustomToken(getClientAuth(), data.customToken);
+    },
+  };
 }
 
 /**
@@ -104,6 +155,11 @@ export function firebaseOtpError(err: unknown): string {
     case 'auth/captcha-check-failed':
     case 'auth/missing-app-credential':
       return 'Verification failed. Please refresh and try again.';
+    case 'auth/billing-not-enabled':
+    case 'auth/quota-exceeded':
+      // Service-side config/quota problem — not something the user can fix by
+      // retrying with different input. (Console diagnostic has the real fix.)
+      return 'OTP service is temporarily unavailable. Please try again shortly.';
     default:
       return 'Could not send OTP. Please try again.';
   }
