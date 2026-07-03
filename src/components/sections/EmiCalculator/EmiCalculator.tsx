@@ -253,7 +253,7 @@ export default function EmiCalculator() {
               </div>
             </div>
 
-            <Link href="/apply" className={`btn btn--cta btn--lg ${styles.applyBtn}`}>
+            <Link href="/apply" className={`btn btn--cta btn--lg ${styles.applyBtn}`} target="_blank" rel="noopener noreferrer">
               Apply for this loan
             </Link>
           </div>

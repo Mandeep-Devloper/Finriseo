@@ -12,7 +12,7 @@ import type { ConfirmationResult } from 'firebase/auth';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useToast } from '@/components/ui/Toast';
 import { otpService, applicationService } from '@/lib/services';
-import { sendFirebaseOtp, firebaseOtpError } from '@/lib/services/firebaseOtp';
+import { sendFirebaseOtp, firebaseOtpError, OTP_DEV_BYPASS, OTP_DEV_BYPASS_CODE } from '@/lib/services/firebaseOtp';
 import styles from './page.module.css';
 
 export default function BasicInfoStep() {
@@ -30,13 +30,30 @@ export default function BasicInfoStep() {
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const [otpValue, setOtpValue] = useState('');
-  // Terms / credit-bureau consent is mandatory to proceed, so it stays locked
-  // ON and cannot be unticked. WhatsApp consent below stays optional.
-  const [consentWhatsapp, setConsentWhatsapp] = useState(true);
+  // Both consents (terms/credit-bureau AND WhatsApp updates) are mandatory:
+  // they render locked ON and cannot be unticked.
   
   const hasAutoSent = React.useRef(false);
   // Holds the in-flight Firebase Phone Auth session used to confirm the code.
   const confirmationRef = React.useRef<ConfirmationResult | null>(null);
+
+  // When the journey is opened in a fresh browser tab from the landing hero,
+  // name + mobile arrive as query params (a new tab doesn't inherit the opener
+  // tab's in-memory store). Hydrate the store once, then strip the params from
+  // the URL so the phone number doesn't linger in the address bar / history.
+  const hydratedFromQuery = React.useRef(false);
+  useEffect(() => {
+    if (hydratedFromQuery.current) return;
+    hydratedFromQuery.current = true;
+    const sp = new URLSearchParams(window.location.search);
+    const qMobile = sp.get('mobile') ?? '';
+    const qName = sp.get('name') ?? '';
+    if (/^[6-9]\d{9}$/.test(qMobile) && !applicationData.mobile) {
+      updateData({ fullName: qName, mobile: qMobile });
+      window.history.replaceState(null, '', '/apply');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (applicationData.mobile && !applicationData.otpVerified && !hasAutoSent.current) {
@@ -162,14 +179,6 @@ export default function BasicInfoStep() {
       {/* Invisible reCAPTCHA target required by Firebase Phone Auth. */}
       <div id="recaptcha-container" />
 
-      {/* Mobile image slot — shown on form step only; hidden on desktop */}
-      {step === 'form' && (
-        <div className={styles.mobileImageSlot}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/firststep.webp" alt="" width={900} height={520} decoding="async" className={styles.slotImage} />
-        </div>
-      )}
-
       <div className={styles.header}>
         <h2 className={styles.title}>
           {step === 'form' ? 'Get personalized Loan Offers' : 'OTP Verification'}
@@ -227,20 +236,28 @@ export default function BasicInfoStep() {
             {apiError && <p className={styles.errorText} role="alert">{apiError}</p>}
           </div>
 
-          <button
-            type="submit"
-            className={`btn btn--cta btn--lg ${styles.submitBtn} ${isLoading ? 'btn--disabled' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? <><Loader2 size={18} className="spin" /> Sending...</> : 'Check Eligibility'}
-          </button>
+          <div className={styles.ctaGroup}>
+            <button
+              type="submit"
+              className={`btn btn--cta btn--lg ${styles.submitBtn} ${isLoading ? 'btn--disabled' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? <><Loader2 size={18} className="spin" /> Sending...</> : 'Check Eligibility'}
+            </button>
 
-          <p className={styles.cibilNote}>No impact on your CIBIL score</p>
+            <p className={styles.cibilNote}>No impact on your CIBIL score</p>
+          </div>
         </form>
       )}
 
       {step === 'otp' && (
         <div className={styles.form}>
+          {/* Compile-time false in production builds — dev reminder only. */}
+          {OTP_DEV_BYPASS && (
+            <p className={styles.cibilNote} style={{ color: 'var(--gold-600)' }}>
+              Dev bypass on — no SMS sent. Enter {OTP_DEV_BYPASS_CODE}.
+            </p>
+          )}
           <div className={styles.otpWrapper}>
             <OtpInput
               length={6}
@@ -267,6 +284,7 @@ export default function BasicInfoStep() {
             </button>
           </div>
 
+          <div className={styles.bottomGroup}>
           <div className={styles.consentBox}>
             <input
               type="checkbox"
@@ -287,8 +305,10 @@ export default function BasicInfoStep() {
               type="checkbox"
               id="consentWhatsapp"
               className={styles.checkbox}
-              checked={consentWhatsapp}
-              onChange={(e) => setConsentWhatsapp(e.target.checked)}
+              checked
+              readOnly
+              // Locked ON — mandatory consent that the user cannot untick.
+              onClick={(e) => e.preventDefault()}
             />
             <label htmlFor="consentWhatsapp" className={styles.consentText}>
               I consent to receive loan-related updates, alerts, and communications via WhatsApp on my registered mobile number.
@@ -303,6 +323,7 @@ export default function BasicInfoStep() {
           >
             {isLoading ? <><Loader2 size={18} className="spin" /> Verifying...</> : 'Continue to Verify'}
           </button>
+          </div>
         </div>
       )}
     </div>

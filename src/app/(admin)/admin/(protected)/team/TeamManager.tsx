@@ -138,7 +138,7 @@ export function TeamManager({
       </div>
 
       <div className={styles.tableWrap}>
-        <table className={styles.table}>
+        <table className={`${styles.table} ${styles.alignMiddle}`}>
           <thead>
             <tr>
               <th>Name</th>

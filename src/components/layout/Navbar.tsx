@@ -164,7 +164,7 @@ export default function Navbar() {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link href="/apply" className={styles.navCta}>
+          <Link href="/apply" className={styles.navCta} target="_blank" rel="noopener noreferrer">
             Apply Now
           </Link>
           <button 
@@ -192,7 +192,7 @@ export default function Navbar() {
             <Link href="/about" className={styles.mobileNavLink}>About Us</Link>
             <Link href="/contact" className={styles.mobileNavLink}>Contact</Link>
           </div>
-          <Link href="/apply" className={styles.mobileCta} onClick={() => setIsOpen(false)}>
+          <Link href="/apply" className={styles.mobileCta} target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)}>
             Apply Now
           </Link>
         </div>

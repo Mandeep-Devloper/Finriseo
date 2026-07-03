@@ -1,352 +1,340 @@
+/* ─────────────────────────────────────────────────────────────────
+   Apply journey shell.
+
+   Mobile  (<768px): full-bleed app screen — the journey's native look.
+   Tablet  (≥768px): dark brand backdrop + floating phone-frame card;
+                     the journey renders inside the "phone".
+   Desktop (≥1024px): left branding panel joins (mPokket-style split).
+   ───────────────────────────────────────────────────────────────── */
+
 .applyContainer {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  background-color: var(--white);
+  position: relative;
+}
+
+/* ── Decorative backdrop (hidden on mobile) ── */
+.bgDecor {
+  display: none;
+}
+
+/* ── Left branding panel (hidden until desktop) ── */
+.leftPanel {
+  display: none;
+}
+
+/* ── Right panel / form area ── */
+.rightPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--white);
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  z-index: 1;
+}
+
+/* On mobile the "card" is just a transparent full-height wrapper */
+.phoneCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   background-color: var(--white);
 }
 
-/* Left Panel */
-.leftPanel {
-  display: none; /* hidden on mobile */
-  flex-direction: column;
-  justify-content: space-between;
-  width: 40%;
-  max-width: 500px;
-  background-color: var(--green-900);
-  color: var(--white);
-  padding: var(--sp-12, 3rem);
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
+/* Phone chrome (progress bar + home indicator) is desktop-only */
+.cardProgress {
+  display: none;
 }
 
-@media (min-width: 1024px) {
-  .leftPanel {
-    display: flex;
+.homeIndicator {
+  display: none;
+}
+
+/* Fill the phone viewport so it feels like a native app screen,
+   with the primary CTA anchored near the bottom (no dead white gap). */
+.formArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--white);
+  padding: var(--sp-6, 1.5rem);
+  padding-bottom: var(--sp-8, 2rem);
+}
+
+/* ═══ Tablet & up: phone-frame card floating on the brand backdrop ═══ */
+@media (min-width: 768px) {
+  .applyContainer {
+    background-color: var(--forest-950);
+    background-image: linear-gradient(
+      160deg,
+      var(--forest-950) 0%,
+      var(--forest-900) 55%,
+      var(--forest-950) 100%
+    );
+  }
+
+  .bgDecor {
+    display: block;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .orbGreen {
+    position: absolute;
+    top: -18%;
+    right: -8%;
+    width: 55vw;
+    height: 55vw;
+    max-width: 720px;
+    max-height: 720px;
+    background: radial-gradient(circle,
+        rgba(76, 175, 114, 0.14) 0%,
+        rgba(76, 175, 114, 0.05) 40%,
+        transparent 70%);
+    border-radius: 50%;
+  }
+
+  .orbGold {
+    position: absolute;
+    bottom: -14%;
+    left: -6%;
+    width: 42vw;
+    height: 42vw;
+    max-width: 540px;
+    max-height: 540px;
+    background: radial-gradient(circle,
+        rgba(201, 168, 76, 0.10) 0%,
+        transparent 65%);
+    border-radius: 50%;
+  }
+
+  /* Thin swirl-like arcs, echoing the site's premium line decorations */
+  .ringTop {
+    position: absolute;
+    top: -34rem;
+    left: 22%;
+    width: 52rem;
+    height: 52rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.10);
+    border-radius: 50%;
+    transform: rotate(18deg);
+  }
+
+  .ringGold {
+    position: absolute;
+    bottom: -22rem;
+    left: -16rem;
+    width: 36rem;
+    height: 36rem;
+    border: 10px solid rgba(201, 168, 76, 0.14);
+    border-radius: 50%;
+  }
+
+  .rightPanel {
+    background: transparent;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-6, 1.5rem);
+  }
+
+  /* The "phone" — always full phone proportions (like a real handset), so
+     every step reads as a complete mobile screen. Inside, each step clusters
+     content at the top and pins its CTA group to the bottom (margin-top:auto)
+     — the one stretch gap sits in the middle, never below the button. Taller
+     steps scroll internally. Centered by .rightPanel. */
+  .phoneCard {
+    flex: 0 0 auto;
+    width: min(430px, 100%);
+    height: min(840px, calc(100dvh - 3rem));
+    background-color: var(--pure-white, #fff);
+    border-radius: 34px;
+    overflow: hidden;
+    box-shadow:
+      0 40px 90px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(255, 255, 255, 0.09);
+  }
+
+  .cardProgress {
+    display: block;
+    flex-shrink: 0;
+    height: 4px;
+    background: var(--ink-100, #EBF0EC);
+  }
+
+  .cardProgressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--forest-600), var(--forest-300));
+    transition: width 0.5s ease;
+  }
+
+  .formArea {
+    flex: 1 1 auto;   /* fill the card so pages can distribute spare height;
+                         shrink (and scroll) when the viewport cap bites */
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--sp-6, 1.5rem);
+    padding-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .homeIndicator {
+    display: block;
+    flex-shrink: 0;
+    width: 110px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--ink-200, #D4DDD5);
+    margin: 10px auto 12px;
   }
 }
 
+/* ═══ Desktop: left branding panel joins ═══ */
+@media (min-width: 1024px) {
+  .leftPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 46%;
+    max-width: 620px;
+    padding: var(--sp-12, 3rem);
+    color: var(--white);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* ── Left panel content (panel itself only shows on desktop) ── */
 .leftContent {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
+/* Deliberately NOT a link — no way back to the landing page from here */
 .logo {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: var(--text-2xl, 1.5rem);
-  font-weight: 800;
-  color: var(--white);
-  margin-bottom: var(--sp-16, 4rem);
-  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--white); /* logo text paths use currentColor */
+  margin-bottom: var(--sp-12, 3rem);
+  cursor: default;
+  user-select: none;
+}
+
+.tagline {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .heroTitle {
   font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(2.4rem, 3.4vw, 3.2rem);
   font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: var(--sp-6, 1.5rem);
+  line-height: 1.16;
+  margin-bottom: var(--sp-8, 2rem);
 }
 
 .highlight {
-  color: var(--emerald-400);
+  position: relative;
+  display: inline-block;
+  padding: 0 0.12em;
+  white-space: nowrap;
+}
+
+.circleSvg {
+  position: absolute;
+  top: -22%;
+  left: -7%;
+  width: 114%;
+  height: 144%;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2, 0.5rem);
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-full, 999px);
   font-size: var(--text-sm, 0.875rem);
   font-weight: 600;
-  margin-bottom: var(--sp-10, 2.5rem);
-  width: fit-content;
+  margin-bottom: var(--sp-8, 2rem);
 }
 
 .badgeIcon {
-  color: var(--emerald-400);
+  color: var(--gold-400);
+  flex-shrink: 0;
+}
+
+.statsRow {
+  display: flex;
+  gap: var(--sp-10, 2.5rem);
+  margin-bottom: var(--sp-8, 2rem);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.statLabel {
+  font-size: var(--text-xs, 0.75rem);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.featuresBox {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: var(--sp-6, 1.5rem);
 }
 
 .featuresList {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4, 1rem);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4, 1rem) var(--sp-6, 1.5rem);
 }
 
 .featureItem {
   display: flex;
   align-items: center;
-  gap: var(--sp-3, 0.75rem);
-  font-size: var(--text-base, 1rem);
-  color: var(--green-100);
+  gap: var(--sp-2, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .checkIcon {
-  color: var(--emerald-400);
+  color: var(--gold-400);
   flex-shrink: 0;
 }
 
 .leftFooter {
   font-size: var(--text-xs, 0.75rem);
-  color: var(--green-300);
-  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.4);
   margin-top: var(--sp-12, 3rem);
-}
-
-/* Right Panel */
-.rightPanel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--cream, #FAFAF5);
-  min-height: 100vh;
-}
-
-.rightContent {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-@media (min-width: 768px) {
-  .rightContent {
-    padding: var(--sp-12, 3rem) var(--sp-8, 2rem);
-  }
-}
-
-/* Progress Tracker */
-.progressContainer {
-  margin-bottom: var(--sp-8, 2rem);
-  display: none; /* Hidden on mobile */
-}
-
-@media (min-width: 768px) {
-  .progressContainer {
-    display: block;
-  }
-}
-
-.progressBar {
-  display: flex;
-  align-items: flex-start;
-  padding: var(--sp-5, 1.25rem) var(--sp-6, 1.5rem);
-  background: var(--white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl, 1.25rem);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  gap: 0;
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.stepNoFlex {
-  flex: 0;
-}
-
-.stepCenter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.stepDot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  border: 2px solid var(--gray-200, #e5e7eb);
-  background: var(--gray-50, #f9fafb);
-  color: var(--gray-400);
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.stepDotActive {
-  border-color: var(--green-500);
-  background: var(--green-500);
-  color: var(--white);
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
-}
-
-.stepDotDone {
-  border-color: var(--green-600);
-  background: var(--green-600);
-  color: var(--white);
-}
-
-.stepLine {
-  flex: 1;
-  height: 2px;
-  background: var(--gray-200, #e5e7eb);
-  margin: 0 4px;
-  margin-top: 14px; /* vertically center with the dot */
-  transition: background 0.3s ease;
-}
-
-.stepLineDone {
-  background: var(--green-500);
-}
-
-.stepLabel {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--gray-400);
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.stepLabelActive {
-  color: var(--green-700);
-}
-
-.stepLabelDone {
-  color: var(--green-600);
-}
-
-/* Form Container */
-.formArea {
-  flex: 1;
-  background-color: var(--white);
-  border-radius: var(--radius-2xl, 1.25rem);
-  padding: var(--sp-6, 1.5rem);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  margin-bottom: var(--sp-12, 3rem);
-}
-
-@media (min-width: 768px) {
-  .formArea {
-    padding: var(--sp-8, 2rem);
-  }
-}
-
-/* On mobile the form is a full-height app screen, not a floating card */
-@media (max-width: 767px) {
-  /* Fill the phone viewport so it feels like a native app screen,
-     with the primary CTA anchored near the bottom (no dead white gap). */
-  .applyContainer {
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-
-  .rightPanel {
-    background-color: var(--white);
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-
-  .rightContent {
-    max-width: 100%;
-    padding: 0;
-    flex: 1;
-    display: flex;
-  }
-
-  .formArea {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--white);
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    padding: var(--sp-6, 1.5rem);
-    padding-bottom: var(--sp-8, 2rem);
-    margin-bottom: 0;
-  }
-
-  /* Trust badges removed on mobile per design — security note lives on the PAN step */
-  .trustRow {
-    display: none;
-  }
-}
-
-/* Trust Badges */
-.trustRow {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--sp-6, 1.5rem);
-  margin-top: auto;
-}
-
-.trustItem {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2, 0.5rem);
-  font-size: var(--text-xs, 0.75rem);
-  color: var(--gray-500);
-  font-weight: 500;
-}
-
-/* ── Mobile Image Area ── */
-.mobileImageArea {
-  display: block;
-  margin-bottom: var(--sp-4, 1rem);
-  overflow: hidden;
-  border-radius: var(--radius-2xl, 1.25rem);
-}
-
-.mobileStepImage {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  border-radius: var(--radius-2xl, 1.25rem);
-}
-
-.mobileImagePlaceholder {
-  height: 180px;
-  background: transparent;
-  /* Reserved for step-specific images */
-}
-
-@media (min-width: 768px) {
-  .mobileImageArea {
-    display: none;
-  }
-}
-
-/* ── Mobile Thin Progress Bar ── */
-.mobileProgressBar {
-  height: 3px;
-  background: var(--gray-200, #e5e7eb);
-  border-radius: 2px;
-  margin-bottom: var(--sp-4, 1rem);
-  overflow: hidden;
-}
-
-.mobileProgressFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--green-500), var(--emerald-400, #34d399));
-  border-radius: 2px;
-  transition: width 0.5s ease;
-}
-
-@media (min-width: 768px) {
-  .mobileProgressBar {
-    display: none;
-  }
 }

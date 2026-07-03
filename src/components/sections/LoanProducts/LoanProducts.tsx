@@ -14,7 +14,7 @@ const PRODUCTS = [
     amount: '₹5,00,000',
     rate: '10.49% p.a.',
     time: '10 min',
-    href: '/personal-loan',
+    href: '/apply',
     tag: 'Most Popular',
   },
   {
@@ -24,7 +24,7 @@ const PRODUCTS = [
     amount: '₹25,00,000',
     rate: '12% p.a.',
     time: 'Same day',
-    href: '/business-loan',
+    href: '/apply',
     tag: null,
   },
   {
@@ -54,7 +54,7 @@ const PRODUCTS = [
     amount: '₹40,00,000',
     rate: '8.5% p.a.',
     time: '24 hrs',
-    href: '/education-loan',
+    href: '/apply',
     tag: null,
   },
   {
@@ -114,7 +114,7 @@ export default function LoanProducts() {
                   </div>
                 </div>
 
-                <Link href={product.href} className={styles.cardCta}>
+                <Link href={product.href} className={styles.cardCta} target="_blank" rel="noopener noreferrer">
                   Apply Now <ArrowRight size={15} />
                 </Link>
               </div>

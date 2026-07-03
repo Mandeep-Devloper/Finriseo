@@ -101,7 +101,12 @@
 
 .table tbody tr:last-child td { border-bottom: none; }
 
-.num { text-align: right; }
+/* Let the trailing actions column absorb slack so data columns stay packed
+   and each header sits directly above its value. */
+.table th:last-child,
+.table td:last-child { width: 100%; }
+
+.num { white-space: nowrap; }
 .mono { font-family: var(--font-mono), monospace; font-size: 0.82rem; }
 
 .swatch {

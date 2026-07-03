@@ -79,6 +79,10 @@
 
 .table tbody tr:last-child td { border-bottom: none; }
 
+/* Opt-in vertical centering for tables whose cells hold form controls
+   (e.g. Team's role select) so text lines up with inputs and badges. */
+.alignMiddle tbody td { vertical-align: middle; }
+
 .mono { font-family: var(--font-mono), monospace; font-size: 0.82rem; }
 .muted { color: var(--ink-400); }
 .nowrap { white-space: nowrap; }

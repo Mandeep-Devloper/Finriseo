@@ -1,20 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
+  flex: 1;
   animation: fadeIn 0.4s ease-out;
-}
-
-/* Mobile image slot — hidden on desktop */
-.mobileImageSlot {
-  display: block;
-  width: calc(100% + 3rem);
-  margin: -1.5rem -1.5rem 1.25rem;
-  height: 200px;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .mobileImageSlot { display: none; }
 }
 
 @keyframes fadeIn {
@@ -40,10 +28,14 @@
   line-height: 1.5;
 }
 
+/* App-style: fields cluster at the top; .actions pins to the bottom via
+   margin-top:auto, so the stretch gap sits in the middle — never below the
+   buttons. `gap` is the minimum spacing when the screen is short. */
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8, 2rem);
+  flex: 1;
 }
 
 .grid {
@@ -146,7 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--sp-4, 1rem);
+  margin-top: auto; /* pin to the bottom of the screen/card */
   padding-top: var(--sp-6, 1.5rem);
   border-top: 1px solid var(--color-border);
 }
@@ -158,14 +150,6 @@
 }
 
 @media (max-width: 767px) {
-  .container {
-    flex: 1;
-  }
-
-  .form {
-    flex: 1;
-  }
-
   .mobileTop {
     display: flex;
   }
@@ -178,7 +162,6 @@
     display: block;
     border-top: none;
     padding-top: 0;
-    margin-top: auto;
   }
 
   .actions :global(.btn--cta) {

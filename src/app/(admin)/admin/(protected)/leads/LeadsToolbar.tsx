@@ -56,17 +56,37 @@ export function LeadsToolbar({
 
   return (
     <div className={styles.toolbar}>
-      <form className={styles.searchForm} onSubmit={onSearchSubmit}>
-        <Search size={16} className={styles.searchIcon} aria-hidden="true" />
-        <input
-          type="search"
-          name="search"
-          defaultValue={get('search')}
-          placeholder="Search phone, name or reference ID"
-          className={styles.searchInput}
-          aria-label="Search leads"
-        />
-      </form>
+      <div className={styles.toolbarTop}>
+        <form className={styles.searchForm} onSubmit={onSearchSubmit}>
+          <Search size={16} className={styles.searchIcon} aria-hidden="true" />
+          <input
+            type="search"
+            name="search"
+            defaultValue={get('search')}
+            placeholder="Search phone, name or reference ID"
+            className={styles.searchInput}
+            aria-label="Search leads"
+          />
+        </form>
+
+        <div className={styles.toolbarActions}>
+          {hasFilters && (
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={() => router.push(pathname)}
+            >
+              <X size={14} /> Clear
+            </button>
+          )}
+
+          {canExport && (
+            <a className={styles.exportBtn} href={exportHref}>
+              <Download size={15} /> Export CSV
+            </a>
+          )}
+        </div>
+      </div>
 
       <div className={styles.filters}>
         <select
@@ -165,22 +185,6 @@ export function LeadsToolbar({
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-
-        {hasFilters && (
-          <button
-            type="button"
-            className={styles.clearBtn}
-            onClick={() => router.push(pathname)}
-          >
-            <X size={14} /> Clear
-          </button>
-        )}
-
-        {canExport && (
-          <a className={styles.exportBtn} href={exportHref}>
-            <Download size={15} /> Export CSV
-          </a>
-        )}
       </div>
     </div>
   );

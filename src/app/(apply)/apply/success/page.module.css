@@ -1,6 +1,10 @@
+/* App-style: content clusters at the top; .actions (and what follows) pins
+   to the bottom via margin-top:auto — the stretch gap sits in the middle,
+   never below the last content. */
 .container {
   display: flex;
   flex-direction: column;
+  flex: 1;
   animation: fadeIn 0.4s ease-out;
 }
 
@@ -226,6 +230,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4, 1rem);
+  margin-top: auto; /* pin to the bottom of the screen/card */
   margin-bottom: var(--sp-6, 1.5rem);
 }
 
