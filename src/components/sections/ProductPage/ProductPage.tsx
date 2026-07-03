@@ -37,7 +37,7 @@ export default function ProductPage({
           <div className={styles.heroLeft}>
             <h1 className={styles.heroTitle}>{title}</h1>
             <p className={styles.heroSubtitle}>{subtitle}</p>
-            <Link href="/apply" className={styles.heroCta}>
+            <Link href="/apply" className={styles.heroCta} target="_blank" rel="noopener noreferrer">
               Apply Now — Free <ArrowRight size={18} />
             </Link>
             <p className={styles.heroNote}>
@@ -58,7 +58,7 @@ export default function ProductPage({
                   <span className={styles.statValue}>{s.value}</span>
                 </div>
               ))}
-              <Link href="/apply" className={styles.statsCardCta}>
+              <Link href="/apply" className={styles.statsCardCta} target="_blank" rel="noopener noreferrer">
                 Check My Eligibility
               </Link>
             </div>
@@ -130,7 +130,7 @@ export default function ProductPage({
         <p className={styles.ctaSubtitle}>
           Get your offer in 10 minutes. No paperwork needed.
         </p>
-        <Link href="/apply" className={styles.ctaBtn}>
+        <Link href="/apply" className={styles.ctaBtn} target="_blank" rel="noopener noreferrer">
           Apply Now — It&apos;s Free <ArrowRight size={18} />
         </Link>
       </section>

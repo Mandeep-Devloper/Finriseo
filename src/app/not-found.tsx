@@ -18,7 +18,7 @@ export default function NotFound() {
           <Link href="/" className="btn btn--ghost btn--lg">
             Go to Homepage
           </Link>
-          <Link href="/apply" className="btn btn--cta btn--lg">
+          <Link href="/apply" className="btn btn--cta btn--lg" target="_blank" rel="noopener noreferrer">
             Apply for a Loan
           </Link>
         </div>

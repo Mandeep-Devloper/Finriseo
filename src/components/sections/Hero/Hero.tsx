@@ -5,10 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { GitCompare, ClipboardCheck, Zap, FileX, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { basicInfoSchema } from '@/lib/validations';
-import { useApplicationStore } from '@/store/applicationStore';
 import styles from './Hero.module.css';
 
 const WORDS = [
@@ -24,8 +22,6 @@ const WORDS = [
 type FormData = z.infer<typeof basicInfoSchema>;
 
 export default function Hero() {
-  const router = useRouter();
-  const updateData = useApplicationStore((state) => state.updateData);
   const [index, setIndex] = useState(0);
   const [show, setShow] = useState(true);
 
@@ -64,8 +60,12 @@ export default function Hero() {
   const isMobileValid = /^[6-9]\d{9}$/.test(mobileValue);
 
   const onSubmit = (data: FormData) => {
-    updateData({ fullName: data.fullName, mobile: data.mobile });
-    router.push('/apply');
+    // Open the application journey in a NEW browser tab (MoneyView-style),
+    // carrying name + mobile as query params so the fresh tab can jump straight
+    // to the OTP step. A new tab doesn't inherit this tab's in-memory store, so
+    // the values travel through the URL rather than the Zustand store.
+    const params = new URLSearchParams({ name: data.fullName, mobile: data.mobile });
+    window.open(`/apply?${params.toString()}`, '_blank', 'noopener,noreferrer');
   };
 
   return (

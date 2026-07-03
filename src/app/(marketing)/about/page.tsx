@@ -75,7 +75,7 @@ export default function AboutPage() {
               NBFCs, giving them real offers, real rates, and real
               choices — all in one place.
             </p>
-            <Link href="/apply" className={styles.missionCta}>
+            <Link href="/apply" className={styles.missionCta} target="_blank" rel="noopener noreferrer">
               Check Your Eligibility →
             </Link>
           </div>
@@ -143,7 +143,7 @@ export default function AboutPage() {
         <p className={styles.ctaSubtitle}>
           Join 2,00,000+ Indians who trusted Finriseo
         </p>
-        <Link href="/apply" className={styles.ctaBtn}>
+        <Link href="/apply" className={styles.ctaBtn} target="_blank" rel="noopener noreferrer">
           Apply Now — It&apos;s Free
         </Link>
       </section>

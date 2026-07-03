@@ -31,10 +31,25 @@
   margin-bottom: 1rem;
 }
 
+.toolbarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .searchForm {
   position: relative;
   max-width: 360px;
   width: 100%;
+  flex: 1 1 220px;
 }
 
 .searchIcon {
@@ -138,7 +153,6 @@
 }
 
 .exportBtn {
-  margin-left: auto;
   border: 1px solid var(--forest-700);
   background: var(--forest-900);
   color: var(--forest-50);
@@ -195,7 +209,6 @@
 }
 
 .num {
-  text-align: right;
   white-space: nowrap;
 }
 
@@ -279,6 +292,5 @@
 
 @media (max-width: 880px) {
   .head { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-  .exportBtn { margin-left: 0; }
   .tableWrap { max-height: none; }
 }
