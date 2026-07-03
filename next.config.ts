@@ -29,7 +29,10 @@ const ContentSecurityPolicy = `
     https://securetoken.googleapis.com
     https://www.googleapis.com
     https://www.google.com
-    https://www.gstatic.com;
+    https://www.gstatic.com
+    https://*.ingest.sentry.io
+    https://*.ingest.us.sentry.io
+    https://*.ingest.de.sentry.io;
   frame-src 'self' 
     https://www.google.com 
     https://recaptcha.google.com;
