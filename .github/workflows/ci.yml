@@ -1,0 +1,49 @@
+# CI gate: typecheck → lint → tests → production build, failing fast on the
+# first broken step. No secrets are needed: server env validation is lazy
+# (src/lib/env.ts) and firebase/prisma init lazily, so `next build` succeeds
+# with no env vars — verified locally with .env absent.
+#
+# Note: this intentionally runs `next build` directly, NOT `npm run build` —
+# the package script also runs `prisma migrate deploy`, which needs the real
+# database and belongs to deploys (Vercel), not CI.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A PR from a branch in this repo triggers both push and pull_request; cancel
+# the superseded run instead of burning minutes twice.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # postinstall runs `prisma generate`, so the client types exist for tsc.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npx eslint src --max-warnings=0
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npx next build
