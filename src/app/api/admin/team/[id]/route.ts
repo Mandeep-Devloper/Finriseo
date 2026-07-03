@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import { requireAdmin, adminAuthErrorResponse } from '@/lib/auth/admin';
@@ -31,29 +32,39 @@ export async function PATCH(
       );
     }
 
-    const target = await db.adminUser.findUnique({ where: { id } });
-    if (!target) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+    // The last-SUPER_ADMIN guard and the update must be atomic: two concurrent
+    // demotions could each count the other as "still active" and together strip
+    // every super admin. Serializable isolation makes one of them abort instead.
+    const outcome = await db.$transaction(
+      async (tx) => {
+        const target = await tx.adminUser.findUnique({ where: { id } });
+        if (!target) return { error: 'Not found', status: 404 as const };
 
-    // Don't strip the last active SUPER_ADMIN of access.
-    const losingSuper =
-      target.role === 'SUPER_ADMIN' && ((role !== undefined && role !== 'SUPER_ADMIN') || active === false);
-    if (losingSuper) {
-      const activeSupers = await db.adminUser.count({ where: { role: 'SUPER_ADMIN', active: true } });
-      if (activeSupers <= 1) {
-        return NextResponse.json(
-          { success: false, error: 'Cannot remove the last active super admin.' },
-          { status: 400 }
-        );
-      }
-    }
+        // Don't strip the last active SUPER_ADMIN of access.
+        const losingSuper =
+          target.role === 'SUPER_ADMIN' && ((role !== undefined && role !== 'SUPER_ADMIN') || active === false);
+        if (losingSuper) {
+          const activeSupers = await tx.adminUser.count({ where: { role: 'SUPER_ADMIN', active: true } });
+          if (activeSupers <= 1) {
+            return { error: 'Cannot remove the last active super admin.', status: 400 as const };
+          }
+        }
 
-    await db.adminUser.update({
-      where: { id },
-      data: {
-        ...(role !== undefined ? { role } : {}),
-        ...(active !== undefined ? { active } : {}),
+        await tx.adminUser.update({
+          where: { id },
+          data: {
+            ...(role !== undefined ? { role } : {}),
+            ...(active !== undefined ? { active } : {}),
+          },
+        });
+        return { target };
       },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+    if ('error' in outcome) {
+      return NextResponse.json({ success: false, error: outcome.error }, { status: outcome.status });
+    }
+    const { target } = outcome;
 
     // Revoking access should end any live session immediately.
     if (active === false) {

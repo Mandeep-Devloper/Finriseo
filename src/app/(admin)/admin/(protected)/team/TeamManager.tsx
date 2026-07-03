@@ -4,14 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import type { Role } from '@prisma/client';
+import { ROLES, ROLE_LABELS } from '@/lib/auth/permissions';
 import styles from '../../_components/panel.module.css';
-
-const ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN', 'AGENT'];
-const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ADMIN: 'Admin',
-  AGENT: 'Agent',
-};
 
 export interface TeamMember {
   id: string;
@@ -111,7 +105,7 @@ export function TeamManager({
             <label className={styles.field}>
               <span className={styles.label}>Role</span>
               <select className={styles.select} value={role} onChange={(e) => setRole(e.target.value as Role)}>
-                {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
               </select>
             </label>
           </div>
@@ -162,7 +156,7 @@ export function TeamManager({
                       disabled={isSelf || rowBusy === m.id}
                       onChange={(e) => patchMember(m.id, { role: e.target.value as Role })}
                     >
-                      {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                      {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                     </select>
                   </td>
                   <td>

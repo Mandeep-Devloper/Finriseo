@@ -2,12 +2,11 @@ import { db } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth/admin';
 import { can } from '@/lib/auth/permissions';
 import { fmtDateTime } from '@/lib/admin/format';
+import { firstParam, type SearchParams } from '@/lib/admin/searchParams';
 import { ResolveButton } from './ResolveButton';
 import styles from '../../_components/panel.module.css';
 
 export const dynamic = 'force-dynamic';
-
-type SearchParams = { [key: string]: string | string[] | undefined };
 
 export default async function InboxPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const admin = await getAdminSession();
@@ -16,7 +15,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   }
 
   const sp = await searchParams;
-  const showResolved = (Array.isArray(sp.show) ? sp.show[0] : sp.show) === 'all';
+  const showResolved = firstParam(sp, 'show') === 'all';
 
   const messages = await db.contactMessage.findMany({
     where: showResolved ? {} : { status: { not: 'resolved' } },

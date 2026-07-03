@@ -5,12 +5,11 @@ import { can } from '@/lib/auth/permissions';
 import { listAuditLog, getAuditActors } from '@/lib/admin/auditQuery';
 import { auditActionLabel } from '@/lib/admin/audit';
 import { fmtDateTime } from '@/lib/admin/format';
+import { firstParam, dayStart, dayEnd, type SearchParams } from '@/lib/admin/searchParams';
 import { AuditFilters } from './AuditFilters';
 import styles from '../../_components/panel.module.css';
 
 export const dynamic = 'force-dynamic';
-
-type SearchParams = { [key: string]: string | string[] | undefined };
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const admin = await getAdminSession();
@@ -19,16 +18,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   }
 
   const sp = await searchParams;
-  const one = (k: string) => { const v = sp[k]; return Array.isArray(v) ? v[0] : v; };
+  const one = (k: string) => firstParam(sp, k);
 
   const page = Math.max(1, parseInt(one('page') ?? '1', 10) || 1);
-  const fromRaw = one('from');
-  const toRaw = one('to');
   const filters = {
     actorAdminId: one('actorAdminId') || undefined,
     action: one('action') || undefined,
-    from: fromRaw ? new Date(`${fromRaw}T00:00:00.000`) : undefined,
-    to: toRaw ? new Date(`${toRaw}T23:59:59.999`) : undefined,
+    from: dayStart(one('from')),
+    to: dayEnd(one('to')),
   };
 
   const [{ rows, total, pageCount }, actors] = await Promise.all([

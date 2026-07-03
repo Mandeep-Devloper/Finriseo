@@ -9,13 +9,12 @@ import {
   getAssignableAgents,
 } from '@/lib/admin/applications';
 import { fmtDate, fmtMoney } from '@/lib/admin/format';
+import { firstParam, type SearchParams } from '@/lib/admin/searchParams';
 import { StatusBadge } from '../../_components/StatusBadge';
 import { LeadsToolbar } from './LeadsToolbar';
 import styles from './leads.module.css';
 
 export const dynamic = 'force-dynamic';
-
-type SearchParams = { [key: string]: string | string[] | undefined };
 
 export default async function LeadsPage({
   searchParams,
@@ -23,10 +22,7 @@ export default async function LeadsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const get = (k: string) => {
-    const v = sp[k];
-    return Array.isArray(v) ? v[0] : v;
-  };
+  const get = (k: string) => firstParam(sp, k);
 
   const query = parseLeadQuery(get);
   const [admin, result, options, agents] = await Promise.all([
