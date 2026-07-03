@@ -55,11 +55,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
-  // firebase-admin is a heavy Node-only SDK (grpc/protobuf, dynamic requires).
-  // Keep it out of the webpack/serverless bundle so Vercel ships the real
-  // package and loads it from node_modules at runtime — bundling it (or letting
-  // OpenTelemetry's module hook wrap it) breaks its module loading in the
-  // serverless runtime and 500s every Firebase-token route.
+  // firebase-admin is a heavy Node-only SDK with dynamic requires; Next
+  // already externalizes it by default — this just makes that explicit.
+  // NOTE: keep firebase-admin on ^13. v14's chain (jwks-rsa@4 → jose@6,
+  // ESM-only) hits ERR_REQUIRE_ESM in Vercel's function loader even on
+  // Node 22, which 500s every route that imports firebase-admin/auth.
   serverExternalPackages: ['firebase-admin'],
   images: {
     formats: ['image/avif', 'image/webp'],
