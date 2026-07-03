@@ -3,7 +3,7 @@ import { PIPELINE_STATUSES } from '@/lib/admin/pipeline';
 
 // Step 1: Full Name + Mobile
 export const step1Schema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  fullName: z.string().trim().min(2, 'Full name must be at least 2 characters'),
   mobile: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
   consent: z.boolean().refine(val => val === true, { message: 'You must accept the terms to continue' }),
 });
@@ -57,7 +57,7 @@ export const otpVerifySchema = z.object({
 // POST /api/application/start
 export const applicationStartSchema = z.object({
   mobile,
-  fullName: z.string().min(2),
+  fullName: z.string().trim().min(2).max(120),
   referenceId: z.string().optional(),
 });
 
@@ -65,16 +65,16 @@ export const applicationStartSchema = z.object({
 export const applicationSubmitSchema = z.object({
   referenceId: z.string().optional(),
   mobile,
-  fullName: z.string().min(2),
-  email: z.string().email().optional(),
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().email().max(160).optional(),
   pinCode: z.string().regex(/^\d{6}$/).optional(),
-  employmentType: z.string().min(1),
+  employmentType: z.string().min(1).max(50),
   monthlyIncome: z.coerce.number().positive(),
-  salaryMode: z.string().optional(),
-  employer: z.string().optional(),
-  experience: z.string().optional(),
+  salaryMode: z.string().max(50).optional(),
+  employer: z.string().trim().max(150).optional(),
+  experience: z.string().max(50).optional(),
   loanAmount: z.coerce.number().positive(),
-  loanPurpose: z.string().optional(),
+  loanPurpose: z.string().trim().max(100).optional(),
   panNumber: pan.optional(),
   selectedOfferId: z.number().optional(),
 });
@@ -82,16 +82,16 @@ export const applicationSubmitSchema = z.object({
 // PATCH /api/application/[referenceId] — every field optional (progressive save)
 export const applicationPatchSchema = z.object({
   loanAmount: z.coerce.number().positive().optional(),
-  email: z.string().email().optional(),
+  email: z.string().email().max(160).optional(),
   pinCode: z.string().regex(/^\d{6}$/).optional(),
-  employmentType: z.string().min(1).optional(),
+  employmentType: z.string().min(1).max(50).optional(),
   monthlyIncome: z.coerce.number().positive().optional(),
-  salaryMode: z.string().min(1).optional(),
-  employer: z.string().optional(),
-  experience: z.string().optional(),
-  loanPurpose: z.string().optional(),
+  salaryMode: z.string().min(1).max(50).optional(),
+  employer: z.string().trim().max(150).optional(),
+  experience: z.string().max(50).optional(),
+  loanPurpose: z.string().trim().max(100).optional(),
   panNumber: pan.optional(),
-  currentStep: z.string().optional(),
+  currentStep: z.string().max(50).optional(),
 });
 
 // POST /api/application/offers
