@@ -3,6 +3,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
 import styles from './ErrorBoundary.module.css';
 
 interface Props {
@@ -26,6 +27,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error in ErrorBoundary:', error, errorInfo);
+    Sentry.captureException(error, {
+      extra: { componentStack: errorInfo.componentStack },
+    });
   }
 
   public render() {
