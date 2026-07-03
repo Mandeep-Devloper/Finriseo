@@ -1,4 +1,5 @@
 // Small shared formatters for the admin panel (client-safe).
+import { formatINR } from '@/lib/financial';
 
 export function fmtDate(d: Date | string | null | undefined): string {
   if (!d) return '—';
@@ -16,7 +17,5 @@ export function fmtDateTime(d: Date | string | null | undefined): string {
 
 export function fmtMoney(n: number | null | undefined): string {
   if (n == null) return '—';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
-  }).format(n);
+  return formatINR(n);
 }

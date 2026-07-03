@@ -55,6 +55,15 @@ const MATRIX: Record<Role, Capability[]> = {
   ],
 };
 
+/** All roles, in privilege order — for role pickers and labels in the UI. */
+export const ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN', 'AGENT'];
+
+export const ROLE_LABELS: Record<Role, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
+  AGENT: 'Agent',
+};
+
 /** True if the role is granted the capability. */
 export function can(role: Role, capability: Capability): boolean {
   return MATRIX[role].includes(capability);

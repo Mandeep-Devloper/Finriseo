@@ -5,6 +5,7 @@ import 'server-only';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { DRAFT_STATUS } from '@/lib/admin/pipeline';
+import { dayStart, dayEnd } from '@/lib/admin/searchParams';
 
 export const PAGE_SIZE = 25;
 
@@ -45,11 +46,6 @@ export function parseLeadQuery(get: (key: string) => string | undefined): LeadQu
   const lenderIdRaw = get('lenderId');
   const lenderId = lenderIdRaw ? parseInt(lenderIdRaw, 10) : undefined;
 
-  const fromRaw = get('from');
-  const toRaw = get('to');
-  // `to` is inclusive to the end of the chosen day.
-  const to = toRaw ? new Date(`${toRaw}T23:59:59.999`) : undefined;
-
   const includeDraftsRaw = get('includeDrafts');
 
   return {
@@ -62,8 +58,8 @@ export function parseLeadQuery(get: (key: string) => string | undefined): LeadQu
     lenderId: Number.isFinite(lenderId) ? lenderId : undefined,
     assignedToId: get('assignedToId') || undefined,
     search: get('search') || undefined,
-    from: fromRaw ? new Date(`${fromRaw}T00:00:00.000`) : undefined,
-    to: Number.isNaN(to?.getTime()) ? undefined : to,
+    from: dayStart(get('from')),
+    to: dayEnd(get('to')),
   };
 }
 
