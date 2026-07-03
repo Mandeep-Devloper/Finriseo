@@ -55,6 +55,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
+  // firebase-admin is a heavy Node-only SDK (grpc/protobuf, dynamic requires).
+  // Keep it out of the webpack/serverless bundle so Vercel ships the real
+  // package and loads it from node_modules at runtime — bundling it (or letting
+  // OpenTelemetry's module hook wrap it) breaks its module loading in the
+  // serverless runtime and 500s every Firebase-token route.
+  serverExternalPackages: ['firebase-admin'],
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
