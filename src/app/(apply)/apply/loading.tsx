@@ -1,62 +1,50 @@
 import React from 'react';
 import styles from '@/components/layout/ApplyLayout/ApplyLayout.module.css';
 
+// Skeleton mirroring the CURRENT ApplyLayout (left brand panel + phone-frame
+// card). The previous skeleton referenced classes from a long-gone layout
+// (rightContent/progressContainer/stepsRow) and rendered unstyled.
 export default function ApplyLoading() {
   return (
     <div className={styles.applyContainer}>
-      {/* Left Panel - Hidden on Mobile */}
+      {/* Left branding panel — hidden on mobile by the layout's own CSS */}
       <aside className={styles.leftPanel}>
         <div className={styles.leftContent}>
-          <div className="skeleton" style={{ width: '120px', height: '32px', marginBottom: '40px' }} />
+          <div className="skeleton" style={{ width: '158px', height: '33px', marginBottom: '40px' }} />
           <div className="skeleton" style={{ width: '80%', height: '80px', marginBottom: '24px' }} />
-          <div className="skeleton" style={{ width: '180px', height: '40px', marginBottom: '40px' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="skeleton" style={{ width: '60%', height: '24px' }} />
+          <div className="skeleton" style={{ width: '200px', height: '40px', marginBottom: '32px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="skeleton" style={{ width: '60%', height: '20px' }} />
             ))}
           </div>
         </div>
       </aside>
 
-      {/* Right Panel - Form Area */}
+      {/* Phone-frame card, same shell the real steps render inside */}
       <main className={styles.rightPanel}>
-        <div className={styles.rightContent}>
-          
-          {/* Progress Bar Component Skeleton */}
-          <div className={styles.progressContainer}>
-            <div className="skeleton" style={{ width: '100%', height: '4px', marginBottom: '24px' }} />
-            <div className={styles.stepsRow}>
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                  <div className="skeleton" style={{ width: '60px', height: '12px' }} />
+        <div className={styles.phoneCard}>
+          <div className={styles.cardProgress} aria-hidden="true">
+            <div className={styles.cardProgressFill} style={{ width: '20%' }} />
+          </div>
+
+          <div className={styles.formArea}>
+            <div className="skeleton" style={{ width: '70%', height: '28px', marginBottom: '12px' }} />
+            <div className="skeleton" style={{ width: '90%', height: '18px', marginBottom: '32px' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className="skeleton" style={{ width: '120px', height: '14px', marginBottom: '8px' }} />
+                  <div className="skeleton" style={{ width: '100%', height: '48px', borderRadius: '10px' }} />
                 </div>
               ))}
             </div>
+
+            <div className="skeleton" style={{ width: '100%', height: '54px', borderRadius: '10px', marginTop: '28px' }} />
           </div>
 
-          {/* Dynamic Route Content Skeleton */}
-          <div className={styles.formArea}>
-            <div className="skeleton" style={{ width: '60%', height: '32px', marginBottom: '16px' }} />
-            <div className="skeleton" style={{ width: '80%', height: '20px', marginBottom: '40px' }} />
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <div className="skeleton" style={{ width: '120px', height: '16px', marginBottom: '8px' }} />
-                <div className="skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
-              </div>
-              <div>
-                <div className="skeleton" style={{ width: '140px', height: '16px', marginBottom: '8px' }} />
-                <div className="skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
-              </div>
-              <div>
-                <div className="skeleton" style={{ width: '100px', height: '16px', marginBottom: '8px' }} />
-                <div className="skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
-              </div>
-            </div>
-            
-            <div className="skeleton" style={{ width: '100%', height: '56px', borderRadius: '12px', marginTop: '32px' }} />
-          </div>
+          <div className={styles.homeIndicator} aria-hidden="true" />
         </div>
       </main>
     </div>

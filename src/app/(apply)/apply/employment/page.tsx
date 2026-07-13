@@ -106,19 +106,28 @@ export default function EmploymentStep() {
             <input
               id="monthlyIncome"
               type="number"
+              inputMode="numeric"
               placeholder="eg ₹40,000"
               className={`form-input ${errors.monthlyIncome ? "error" : ""}`}
+              aria-invalid={errors.monthlyIncome ? true : undefined}
+              aria-describedby={errors.monthlyIncome ? 'monthlyIncome-error' : undefined}
               {...register("monthlyIncome")}
             />
             {errors.monthlyIncome && (
-              <p className={styles.errorText}>{errors.monthlyIncome.message}</p>
+              <p id="monthlyIncome-error" role="alert" className={styles.errorText}>{errors.monthlyIncome.message}</p>
             )}
           </div>
 
           {/* Employment Type — Pill Toggle */}
           <div className="form-group">
-            <label className="form-label">Employment Type</label>
-            <div className={styles.pillGroup}>
+            <span className="form-label" id="employmentType-label">Employment Type</span>
+            <div
+              className={styles.pillGroup}
+              role="radiogroup"
+              aria-labelledby="employmentType-label"
+              aria-invalid={errors.employmentType ? true : undefined}
+              aria-describedby={errors.employmentType ? 'employmentType-error' : undefined}
+            >
               <label className={`${styles.pill} ${selectedEmploymentType === 'Salaried' ? styles.pillActive : ''}`}>
                 <input
                   type="radio"
@@ -139,7 +148,7 @@ export default function EmploymentStep() {
               </label>
             </div>
             {errors.employmentType && (
-              <p className={styles.errorText}>
+              <p id="employmentType-error" role="alert" className={styles.errorText}>
                 {errors.employmentType.message}
               </p>
             )}
@@ -147,8 +156,14 @@ export default function EmploymentStep() {
 
           {/* Salary Mode — Pill Toggle */}
           <div className="form-group">
-            <label className="form-label">How Do You Receive Your Salary?</label>
-            <div className={styles.pillGroup}>
+            <span className="form-label" id="salaryMode-label">How Do You Receive Your Salary?</span>
+            <div
+              className={styles.pillGroup}
+              role="radiogroup"
+              aria-labelledby="salaryMode-label"
+              aria-invalid={errors.salaryMode ? true : undefined}
+              aria-describedby={errors.salaryMode ? 'salaryMode-error' : undefined}
+            >
               {["Bank", "Cash", "Cheque"].map((mode) => (
                 <label
                   key={mode}
@@ -165,7 +180,7 @@ export default function EmploymentStep() {
               ))}
             </div>
             {errors.salaryMode && (
-              <p className={styles.errorText}>{errors.salaryMode.message}</p>
+              <p id="salaryMode-error" role="alert" className={styles.errorText}>{errors.salaryMode.message}</p>
             )}
           </div>
         </div>

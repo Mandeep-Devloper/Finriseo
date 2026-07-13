@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateReferenceId } from '@/lib/financial';
 import { db } from '@/lib/db';
+import { getClientIp } from '@/lib/http/ip';
+import { encryptPii } from '@/lib/crypto/pii';
 import { checkIpRateLimit, checkPhoneRateLimit, maskPhone } from '@/app/api/otp/_otpStore';
 import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { recordAudit } from '@/lib/services/auditLog';
 import { resolveSubmission } from '@/lib/services/eligibility';
 import { applicationSubmitSchema as schema } from '@/lib/validations';
@@ -13,9 +16,7 @@ export async function POST(req: NextRequest) {
     const session = await requireSession();
 
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for')
-      ?? headersList.get('x-real-ip')
-      ?? 'unknown';
+    const ip = getClientIp(headersList);
 
     const ipCheck = await checkIpRateLimit(ip, 5, 60, 'submit'); // 5 submits per hour per IP
     if (!ipCheck.allowed) {
@@ -80,7 +81,9 @@ export async function POST(req: NextRequest) {
       experience: d.experience ?? null,
       loanAmount: resolved.loanAmount,
       loanPurpose: d.loanPurpose ?? null,
-      panNumber: d.panNumber ?? null,
+      // PAN is written ONLY through encryptPii (AES-256-GCM when a key is set,
+      // passthrough otherwise) — never stored raw from the request.
+      panNumber: encryptPii(d.panNumber ?? null),
       selectedOfferId: resolved.selectedOfferId,
       status: 'submitted',
       currentStep: 'submitted',
@@ -119,6 +122,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     if (err instanceof SessionError) return unauthorized();
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+    await reportServerError('application-submit', err);
+    return serverError();
   }
 }

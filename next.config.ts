@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 // CSP notes (script-src):
+//   - fonts.googleapis.com / fonts.gstatic.com were REMOVED from style-src /
+//     font-src: all fonts are now self-hosted via next/font (src/app/layout.tsx),
+//     so no request ever goes to Google Fonts.
 //   - 'unsafe-eval' has been REMOVED — GA4/gtag, GTM (standard tags), the
 //     Firebase Auth web SDK, and invisible reCAPTCHA do not require eval in our
 //     usage, so dropping it shrinks the XSS surface.
@@ -19,8 +22,8 @@ const ContentSecurityPolicy = `
     https://www.gstatic.com
     https://www.google.com
     https://recaptcha.google.com;
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' https://fonts.gstatic.com;
+  style-src 'self' 'unsafe-inline';
+  font-src 'self';
   img-src 'self' data: blob: https://www.google-analytics.com;
   connect-src 'self'
     https://www.google-analytics.com
@@ -48,6 +51,12 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // Isolate our top-level browsing context from cross-origin openers (Spectre /
+  // tab-nabbing defence). `-allow-popups` keeps any popup-based auth working; the
+  // OTP flow uses an invisible-reCAPTCHA *iframe* (unaffected by COOP).
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+  // Block legacy Flash/PDF cross-domain policy files.
+  { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
   { key: 'X-XSS-Protection', value: '1; mode=block' },
   { key: 'Content-Security-Policy', value: ContentSecurityPolicy },
 ];

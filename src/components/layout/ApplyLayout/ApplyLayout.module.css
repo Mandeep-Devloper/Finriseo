@@ -237,11 +237,14 @@
 }
 
 .heroTitle {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: clamp(2.4rem, 3.4vw, 3.2rem);
   font-weight: 800;
   line-height: 1.16;
   margin-bottom: var(--sp-8, 2rem);
+  /* The global `h1` rule forces a dark ink color, which is invisible on this
+     dark-green panel. Restore the panel's white text (class beats element). */
+  color: var(--white);
 }
 
 .highlight {
@@ -292,7 +295,7 @@
 }
 
 .statValue {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.55rem;
   font-weight: 800;
   color: var(--white);

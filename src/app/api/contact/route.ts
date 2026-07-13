@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
+import { getClientIp } from '@/lib/http/ip';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { checkIpRateLimit } from '@/app/api/otp/_otpStore';
 import { contactSchema } from '@/lib/validations';
 import { headers } from 'next/headers';
@@ -8,9 +10,7 @@ import { headers } from 'next/headers';
 export async function POST(req: NextRequest) {
   try {
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') 
-      ?? headersList.get('x-real-ip') 
-      ?? 'unknown';
+    const ip = getClientIp(headersList);
 
     const ipCheck = await checkIpRateLimit(ip, 3, 60, 'contact'); // 3 submits per hour per IP
     if (!ipCheck.allowed) {
@@ -46,9 +46,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    await reportServerError('contact', error);
+    return serverError();
   }
 }

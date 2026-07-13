@@ -12,6 +12,8 @@ import {
   getFilterOptions,
 } from '@/lib/admin/applications';
 import { fmtDate, fmtDateTime, fmtMoney } from '@/lib/admin/format';
+import { toNullableNumber } from '@/lib/money';
+import { decryptPii } from '@/lib/crypto/pii';
 import { statusLabel } from '@/lib/admin/pipeline';
 import { auditActionLabel } from '@/lib/admin/audit';
 import { StatusBadge } from '../../../_components/StatusBadge';
@@ -89,7 +91,16 @@ export default async function LeadDetailPage({
               <Field label="Mobile" value={app.mobile} />
               <Field label="Email" value={app.email} />
               <Field label="PIN code" value={app.pinCode} />
-              <Field label="PAN" value={app.panNumber} />
+              {/* This is the audited detail view — the only place the full PAN is
+                  revealed. decryptPii() returns plaintext when a key is set, or the
+                  stored value verbatim otherwise. */}
+              <Field label="PAN" value={decryptPii(app.panNumber)} />
+              {/* Tri-state on purpose: rows from before the opt-in existed are
+                  "unknown", not "no" — ops must not WhatsApp those borrowers. */}
+              <Field
+                label="WhatsApp updates"
+                value={app.whatsappOptIn == null ? null : app.whatsappOptIn ? 'Opted in' : 'Declined'}
+              />
             </dl>
           </section>
 
@@ -184,7 +195,7 @@ export default async function LeadDetailPage({
             lenders={options.lenders.map((l) => ({ id: l.id, name: l.name }))}
             disbursement={{
               chosenLenderId: app.chosenLenderId,
-              amount: app.disbursedAmount,
+              amount: toNullableNumber(app.disbursedAmount),
               date: app.disbursedAt ? app.disbursedAt.toISOString().slice(0, 10) : null,
             }}
           />

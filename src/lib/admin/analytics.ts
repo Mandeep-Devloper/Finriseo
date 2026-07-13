@@ -5,6 +5,7 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { DRAFT_STATUS, PIPELINE_STATUSES } from '@/lib/admin/pipeline';
 import { getDefaultCommissionRate } from '@/lib/admin/settings';
+import { toNumber } from '@/lib/money';
 
 export interface Kpis {
   totalLeads: number;        // non-draft applications
@@ -75,9 +76,9 @@ async function getKpis(): Promise<Kpis> {
     drafts,
     byStatus,
     disbursedCount,
-    disbursedTotal: disbursedAgg._sum.disbursedAmount ?? 0,
-    disbursedThisMonth: monthAgg._sum.disbursedAmount ?? 0,
-    estimatedCommission: Number(commissionRows[0]?.commission ?? 0),
+    disbursedTotal: toNumber(disbursedAgg._sum.disbursedAmount),
+    disbursedThisMonth: toNumber(monthAgg._sum.disbursedAmount),
+    estimatedCommission: toNumber(commissionRows[0]?.commission),
     conversionRate: totalLeads > 0 ? disbursedCount / totalLeads : 0,
     activeLenders,
   };

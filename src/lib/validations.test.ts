@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   step1Schema,
+  applicationStartSchema,
   applicationSubmitSchema,
   statusParamSchema,
   adminApplicationPatchSchema,
@@ -24,6 +25,25 @@ describe('step1Schema (name + mobile + consent)', () => {
 
   it('requires consent to be true', () => {
     expect(step1Schema.safeParse({ ...valid, consent: false }).success).toBe(false);
+  });
+});
+
+describe('applicationStartSchema (consent capture)', () => {
+  const valid = { mobile: '9876543210', fullName: 'Asha Verma' };
+
+  it('accepts a start without consent (backward compatible)', () => {
+    expect(applicationStartSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('accepts an explicit consent flag', () => {
+    const parsed = applicationStartSchema.safeParse({ ...valid, consent: true });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.consent).toBe(true);
+  });
+
+  it('rejects a bad mobile or too-short name', () => {
+    expect(applicationStartSchema.safeParse({ ...valid, mobile: '123' }).success).toBe(false);
+    expect(applicationStartSchema.safeParse({ ...valid, fullName: 'A' }).success).toBe(false);
   });
 });
 

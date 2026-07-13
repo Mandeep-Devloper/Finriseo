@@ -25,18 +25,20 @@ model Application {
   email           String?
   pinCode         String?
   employmentType  String?
-  monthlyIncome   Float?
+  // Money is stored as DECIMAL (never Float) so amounts and their sums are
+  // exact — no binary-floating-point drift in disbursement/commission math.
+  monthlyIncome   Decimal? @db.Decimal(14, 2)
   salaryMode      String?
   employer        String?
   experience      String?
-  loanAmount      Float?
+  loanAmount      Decimal? @db.Decimal(14, 2)
   loanPurpose     String?
-  // TODO(compliance): PAN is stored in plaintext. Supabase encrypts at the
-  // disk level, but PAN is sensitive enough to justify column-level
-  // encryption (pgcrypto/pgsodium or app-side AES via a KMS-held key) before
-  // scale. Until then its exposure surface is deliberately minimal: excluded
-  // from sessionStorage, CSV exports, and all logs; visible only on the
-  // audited admin detail view.
+  // PAN is written/read ONLY through src/lib/crypto/pii.ts (encryptPii/decryptPii).
+  // With PII_ENCRYPTION_KEY set it is AES-256-GCM encrypted at rest; unset, it
+  // passes through as plaintext (current default). Either way its exposure surface
+  // is deliberately minimal: excluded from sessionStorage, CSV exports, and all
+  // logs; masked in the UI; full value visible only on the audited admin detail
+  // view. TODO(compliance): choose a key-custody model and set the key — see pii.ts.
   panNumber       String?
   selectedOfferId Int?
   // Funnel position — lets you see exactly where a lead is/dropped off:
@@ -53,8 +55,22 @@ model Application {
   // selectedOfferId (the offer the BORROWER picked in the funnel) — the admin
   // may route to a different lender. Feeds Phase 4 commission (× commissionRate).
   chosenLenderId  Int?
-  disbursedAmount Float?
+  disbursedAmount Decimal? @db.Decimal(14, 2)
   disbursedAt     DateTime?
+  // ── Consent (audit-grade proof the borrower agreed to terms) ──
+  // Captured server-side at draft creation from the OTP-verified session, so a
+  // regulated lender partner can be shown WHO consented, to WHICH policy version,
+  // WHEN, and from where. Nullable only for rows created before this column.
+  consentAt        DateTime?
+  consentVersion   String?   // e.g. "2026-07-04" — the terms/privacy version shown
+  consentIp        String?   // trusted client IP at the moment of consent
+  consentUserAgent String?   // raw UA string, for dispute forensics
+  // OPTIONAL WhatsApp-updates opt-in, distinct from the mandatory T&C consent.
+  // It was previously a locked pre-ticked checkbox (a DPDP dark pattern) whose
+  // value was never even stored; now it is a real user choice recorded here.
+  // Nullable: rows created before this column (or where no signal was sent)
+  // are "unknown", not "no".
+  whatsappOptIn    Boolean?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -151,7 +167,7 @@ model AppSetting {
   supportEmail          String?
   supportPhone          String?
   address               String?
-  defaultCommissionRate Float?
+  defaultCommissionRate Decimal? @db.Decimal(6, 3)
   updatedAt             DateTime @updatedAt
 }
 
@@ -185,27 +201,27 @@ model RateLimit {
 model Lender {
   id            Int      @id @default(autoincrement())
   name          String
-  interestRate  Float    // annual % p.a.
+  interestRate  Decimal  @db.Decimal(6, 3) // annual % p.a.
   tenureMonths  Int
   processingFee String   // display string, e.g. "1.5%"
   color         String   // accent color for the offer card
-  minIncome     Float    @default(0)     // minimum monthly income to qualify
-  maxMultiplier Float    @default(10)    // max loan = monthlyIncome * maxMultiplier
+  minIncome     Decimal  @default(0) @db.Decimal(14, 2)  // minimum monthly income to qualify
+  maxMultiplier Decimal  @default(10) @db.Decimal(6, 3)  // max loan = monthlyIncome * maxMultiplier
   active        Boolean  @default(true)
   priority      Int      @default(0)     // higher shows first
   // ── Admin-managed eligibility / commercials (Phase 3) ──
   // All additive + nullable/defaulted so existing rows and the offers engine
   // behave exactly as before until an admin sets a value.
-  logoUrl         String?            // lender logo (display)
-  interestRateMax Float?             // upper bound of a display rate range; interestRate is the "from" rate (drives EMI)
-  minAmount       Float?             // absolute minimum loan this lender funds
-  maxAmount       Float?             // absolute maximum loan (capped on top of income × maxMultiplier)
-  minAge          Int?               // stored for management; NOT enforced (funnel collects no age)
-  maxAge          Int?               // stored for management; NOT enforced
-  maxFoir         Float?             // stored for management; NOT enforced (no obligations collected)
+  logoUrl         String?                     // lender logo (display)
+  interestRateMax Decimal? @db.Decimal(6, 3)  // upper bound of a display rate range; interestRate is the "from" rate (drives EMI)
+  minAmount       Decimal? @db.Decimal(14, 2) // absolute minimum loan this lender funds
+  maxAmount       Decimal? @db.Decimal(14, 2) // absolute maximum loan (capped on top of income × maxMultiplier)
+  minAge          Int?                        // stored for management; NOT enforced (funnel collects no age)
+  maxAge          Int?                        // stored for management; NOT enforced
+  maxFoir         Decimal? @db.Decimal(6, 3)  // stored for management; NOT enforced (no obligations collected)
   employmentTypes String[] @default([]) // [] = any employment; else borrower's employmentType must be in this list
   loanTypes       String[] @default([]) // loan products this lender serves (display / optional filtering)
-  commissionRate  Float?             // % of disbursed amount → Phase 4 commission estimates
+  commissionRate  Decimal? @db.Decimal(6, 3)  // % of disbursed amount → Phase 4 commission estimates
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

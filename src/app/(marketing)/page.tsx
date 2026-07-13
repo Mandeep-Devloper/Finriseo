@@ -76,7 +76,7 @@ export default function HomePage() {
         "name": "Finriseo",
         "alternateName": "UpAndAlone Fintech Pvt. Ltd.",
         "url": "https://finriseo.com",
-        "logo": "https://finriseo.com/logo.webp",
+        "logo": "https://finriseo.com/icon.png",
         "description": "India's trusted loan comparison platform connecting borrowers with RBI-registered NBFCs.",
         "address": {
           "@type": "PostalAddress",
@@ -96,13 +96,11 @@ export default function HomePage() {
         "sameAs": [
           "https://linkedin.com/company/finriseo",
           "https://twitter.com/finriseo"
-        ],
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "reviewCount": "200000",
-          "bestRating": "5"
-        }
+        ]
+        // NOTE: no aggregateRating here on purpose. Google's structured-data
+        // policy requires ratings to come from real, on-page user reviews;
+        // fabricated review markup risks a manual action against the whole site.
+        // Re-add only once genuine reviews are collected and displayed.
       }} />
       <JsonLd data={{
         "@context": "https://schema.org",
@@ -134,12 +132,9 @@ export default function HomePage() {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Finriseo",
-        "url": "https://finriseo.com",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": { "@type": "EntryPoint", "urlTemplate": "https://finriseo.com/search?q={search_term_string}" },
-          "query-input": "required name=search_term_string"
-        }
+        "url": "https://finriseo.com"
+        // No SearchAction: the site has no /search route. Pointing Google at a
+        // non-existent search URL is worse than omitting the action entirely.
       }} />
     </>
   );

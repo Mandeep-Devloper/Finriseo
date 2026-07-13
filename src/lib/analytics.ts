@@ -1,9 +1,15 @@
+// gtag is injected by the GoogleAnalytics component (production only, and only
+// when a measurement ID is configured) — so it is optional on window and every
+// call must tolerate its absence.
+declare global {
+  interface Window {
+    gtag?: (command: string, eventName: string, params?: Record<string, unknown>) => void;
+  }
+}
+
 export function trackEvent(eventName: string, params?: Record<string, unknown>) {
   if (typeof window === 'undefined') return;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!(window as any).gtag) return;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).gtag('event', eventName, params);
+  window.gtag?.('event', eventName, params);
 }
 
 // Pre-defined events for the loan apply funnel:

@@ -43,7 +43,7 @@
 }
 
 .label {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-weight: 700;
   color: var(--gray-800);
   font-size: var(--text-base, 1rem);
@@ -79,7 +79,7 @@
   border: none;
   outline: none;
   background: transparent;
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-weight: 700;
   /* 16px floor keeps iOS from zooming the page on focus. */
   font-size: max(16px, var(--text-base, 1rem));
@@ -217,7 +217,7 @@
 }
 
 .emiValue {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: var(--text-2xl, 1.5rem);
   font-weight: 800;
   color: var(--green-900);

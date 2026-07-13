@@ -91,6 +91,10 @@ export default function PanStep() {
               type="text"
               placeholder="e.g. ABCDE1234F"
               maxLength={10}
+              autoComplete="off"
+              autoCapitalize="characters"
+              aria-invalid={errors.panNumber ? true : undefined}
+              aria-describedby={errors.panNumber ? 'panNumber-error' : undefined}
               className={`form-input ${styles.uppercaseInput} ${errors.panNumber ? 'error' : ''}`}
               {...register('panNumber', {
                 onChange: (e) => {
@@ -99,7 +103,7 @@ export default function PanStep() {
               })}
             />
             {errors.panNumber && (
-              <p className={styles.errorText}>{errors.panNumber.message}</p>
+              <p id="panNumber-error" role="alert" className={styles.errorText}>{errors.panNumber.message}</p>
             )}
           </div>
 

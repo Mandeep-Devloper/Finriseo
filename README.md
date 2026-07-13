@@ -22,6 +22,17 @@ database via an RBAC capability matrix. Loan offers are computed server-side
 from the admin-managed `Lender` table and re-derived on submit so client input
 is never trusted.
 
+**Money is stored as `Decimal`** (never float) for exact sums/commission.
+**Borrower consent** (Terms/Privacy/credit-bureau) is captured server-side with
+timestamp, version, IP and user-agent; the **WhatsApp-updates opt-in** is a
+separate, genuinely optional choice persisted per application
+(`Application.whatsappOptIn`, tri-state — null means "no signal", never assume
+yes). **PAN** is written/read through a single
+encryption boundary (`src/lib/crypto/pii.ts`) that is AES-256-GCM encrypted at
+rest when `PII_ENCRYPTION_KEY` is set and plaintext-passthrough otherwise.
+Per-IP rate limiting resolves a **trusted client IP** (`src/lib/http/ip.ts`) so
+`X-Forwarded-For` can't be spoofed to mint fresh buckets.
+
 ## Tech stack
 
 - **Next.js 15** (App Router, React 19, TypeScript) — deployed on Vercel
@@ -45,6 +56,9 @@ src/
 │   ├── auth/               # session.ts (borrower) · admin.ts (admin) · permissions.ts (RBAC matrix)
 │   ├── admin/              # leads query/analytics/pipeline vocab/formatters
 │   ├── services/           # eligibility engine · firebaseOtp · auditLog · apiClient
+│   ├── http/               # ip.ts (trusted client IP) · errors.ts (safe 500 + Sentry)
+│   ├── crypto/             # pii.ts (AES-256-GCM PAN encryption boundary)
+│   ├── money.ts            # Decimal ↔ number boundary helpers
 │   ├── env.ts              # lazy Zod validation of required server env
 │   ├── db.ts               # Prisma client singleton
 │   └── validations.ts      # all Zod schemas (client + API)
@@ -63,7 +77,7 @@ visitors without a cookie. All admin mutations are role-gated via
 
 ## Installation
 
-Requirements: **Node 20** (see `.nvmrc`), npm.
+Requirements: **Node 22** (see `.nvmrc`), npm.
 
 ```bash
 git clone <repo-url> && cd finriseo
@@ -84,8 +98,10 @@ All documented with sources in [.env.example](.env.example). Summary:
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase web app config (public) — API key, auth domain, project id, sender id, app id |
 | `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Service-account credentials for `firebase-admin` (keep the literal `\n`s in the key) |
 | `OTP_DEV_BYPASS` + `NEXT_PUBLIC_OTP_DEV_BYPASS` | **Dev only** — skip SMS (see below). Never set in production |
+| `TRUSTED_PROXY_HOPS` | Trusted reverse-proxy hops for client-IP resolution (default 1; Vercel = 1) |
+| `PII_ENCRYPTION_KEY` | Optional 32-byte base64/hex key. Set → PAN is AES-256-GCM encrypted at rest; unset → plaintext passthrough |
 | `NEXT_PUBLIC_GA_ID` | Optional GA4 measurement id |
-| `NEXT_PUBLIC_SENTRY_DSN` | Optional Sentry DSN — error monitoring is a no-op until set |
+| `NEXT_PUBLIC_SENTRY_DSN` | Optional Sentry DSN — error monitoring (including API-route 500s) is a no-op until set |
 
 Required server vars are validated lazily by [src/lib/env.ts](src/lib/env.ts):
 a missing var fails with a clear message on first use, and `next build` works
@@ -114,6 +130,26 @@ Firebase to Blaze.
 client causes 500s. Note the Supabase free-tier database pauses when idle
 (`P1001` even though the pooler answers TCP); resume it from the dashboard.
 
+## Testing
+
+`npm test` runs the Vitest suite (no DB or network needed — DB access is mocked).
+Coverage focuses on the security- and money-critical logic:
+
+| Suite | What it locks down |
+|---|---|
+| `lib/financial.test.ts` | EMI formula, INR formatting, reference-id shape |
+| `lib/money.test.ts` | Decimal ↔ number boundary (no NaN, exact conversion) |
+| `lib/http/ip.test.ts` | Trusted client-IP resolution; XFF-spoofing is neutralised |
+| `lib/crypto/pii.test.ts` | AES-256-GCM round-trip, passthrough, legacy plaintext, tamper + wrong-key rejection, PAN masking |
+| `lib/auth/permissions.test.ts` | RBAC matrix + least-privilege nesting (AGENT ⊂ ADMIN ⊂ SUPER_ADMIN) |
+| `lib/services/eligibility.test.ts` | Eligibility filtering, offer caps, submit anti-tampering, Decimal mapping |
+| `lib/validations.test.ts` | All Zod API schemas incl. consent + op-discriminated admin mutations |
+| `app/api/otp/_otpStore.test.ts` | Rate-limiter allow/block/retry logic + dual-check short-circuit + phone masking |
+
+**Still on the roadmap:** end-to-end (Playwright) smoke tests through the funnel
+and admin login, and full HTTP-level route tests (they need a test database or a
+heavier Firebase/Prisma mock harness).
+
 ## Admin bootstrap
 
 1. In the Firebase console, enable the **Email/Password** sign-in provider.
@@ -132,9 +168,10 @@ client causes 500s. Note the Supabase free-tier database pauses when idle
   the Vercel build applies pending migrations, so a deploy and its schema move
   together. Vercel needs all env vars above (set them for Preview too if you
   use branch deploys).
-- CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs typecheck,
-  lint, unit tests, and a production build on every push/PR — no secrets
-  needed, and it deliberately does **not** run migrations.
+- CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs Prisma schema
+  validation, typecheck, lint, unit tests, and a production build on every
+  push/PR, plus a report-only `npm audit` — no secrets needed, and it
+  deliberately does **not** run migrations.
 - Security headers + CSP are set in [next.config.ts](next.config.ts).
 
 ## Troubleshooting
@@ -148,11 +185,37 @@ client causes 500s. Note the Supabase free-tier database pauses when idle
 | `verifyIdToken FAILED` in OTP verify | Admin credentials belong to a different Firebase project than the client config |
 | Admin login OK but bounced back | No active `AdminUser` row for that Firebase user — run `admin:create` or check `/admin/team` |
 
+## Security model
+
+The security boundaries and how they hold:
+
+| Concern | Mechanism |
+|---|---|
+| **AuthN (borrower)** | Firebase Phone OTP → server verifies ID token (freshness + revocation) → httpOnly session cookie. `requireSession()` gates every protected route. |
+| **AuthN (admin)** | Separate cookie, Firebase Email/Password, `sign_in_provider === 'password'` enforced. `requireAdmin()` re-checks the DB `AdminUser` (`active` + `role`) every request. |
+| **AuthZ (RBAC)** | One capability matrix (`lib/auth/permissions.ts`) drives both server `can()` checks and UI gating. Least-privilege, strictly nested AGENT ⊂ ADMIN ⊂ SUPER_ADMIN (unit-tested). |
+| **Ownership** | Borrower routes match the session phone; 404 (not 403) on “missing/not-yours” so reference IDs can’t be enumerated. |
+| **Anti-tampering** | Loan amount + selected offer re-derived server-side from the live `Lender` table on submit (`resolveSubmission`). |
+| **Money integrity** | `Decimal` columns; commission summed in SQL over `NUMERIC`; JS boundary via `lib/money.ts`. |
+| **Consent** | Captured server-side (who/when/version/IP/UA) on the draft; original timestamp never overwritten. |
+| **PAN at rest** | Single boundary (`lib/crypto/pii.ts`); AES-256-GCM when `PII_ENCRYPTION_KEY` is set. Excluded from sessionStorage, CSV, and logs; masked helper for display. |
+| **Rate limiting** | DB-backed atomic upsert (serverless-safe); per-IP + per-phone; IP resolved from a **trusted** hop (`lib/http/ip.ts`) so XFF can’t be spoofed. |
+| **Error handling** | `lib/http/errors.ts` returns a fixed generic 500 (no internals leak) and forwards to Sentry when a DSN is set. |
+| **Headers/CSP** | HSTS, `frame-ancestors 'none'`, COOP, nosniff, Permissions-Policy, CSP (see `next.config.ts`). |
+| **Audit** | Append-only, PII-free `AuditLog` for borrower + admin actions. |
+
 ## Roadmap
 
-- **Upgrade Firebase to Blaze** — production SMS OTP (launch blocker); then remove the dev bypass
-- Admin MFA enrollment (Firebase console + in-app flow)
+Done in the latest hardening pass: **Decimal money · consent capture · PAN
+encryption boundary · trusted client-IP rate limiting · server-side error
+reporting · expanded test suite · defense-in-depth headers.**
+
+Still requires external services / decisions:
+
+- **Upgrade Firebase to Blaze** — production SMS OTP (launch blocker); then remove the dev bypass *(needs billing)*
+- **Set `PII_ENCRYPTION_KEY`** + choose key custody (env vs KMS) and backfill existing plaintext PANs *(needs a compliance decision)*
+- Admin MFA enrollment (Firebase console + in-app flow) *(needs Firebase config)*
 - Document collection (private Supabase Storage bucket + signed URLs)
-- PAN encryption at rest / data-retention automation
-- Nonce-based CSP (drop `unsafe-inline` for scripts)
+- Data-retention automation (scheduled purge of stale drafts / OtpLog / resolved contacts) *(needs a cron/Vercel Cron)*
+- Nonce-based CSP (drop `unsafe-inline` for scripts — needs middleware nonce propagation)
 - E2E smoke tests (Playwright) on the funnel and admin login

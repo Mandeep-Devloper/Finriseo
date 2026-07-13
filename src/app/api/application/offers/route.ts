@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import { getClientIp } from '@/lib/http/ip';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
 import { getEligibleLenders, buildOffers } from '@/lib/services/eligibility';
 import { checkDualRateLimit } from '@/app/api/otp/_otpStore';
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
     const session = await requireSession();
 
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') ?? headersList.get('x-real-ip') ?? 'unknown';
+    const ip = getClientIp(headersList);
     // Generous: offers re-compute as the user tweaks amount/income, but this
     // still caps scripted enumeration of the lender table.
     const rate = await checkDualRateLimit({ ip, phone: session.phone, maxRequests: 60, windowMinutes: 60, scope: 'offers' });
@@ -52,6 +54,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     if (err instanceof SessionError) return unauthorized();
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+    await reportServerError('application-offers', err);
+    return serverError();
   }
 }

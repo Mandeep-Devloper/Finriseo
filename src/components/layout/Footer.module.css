@@ -2,7 +2,7 @@
   background-color: var(--green-950);
   color: var(--white);
   padding: var(--sp-16, 4rem) 0 var(--sp-8, 2rem);
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
 }
 
 .container {
@@ -30,7 +30,7 @@
 }
 
 .brandName {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: var(--text-2xl, 1.5rem);
   font-weight: 800;
   color: var(--white);
@@ -81,7 +81,7 @@
 }
 
 .columnTitle {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: var(--text-base, 1rem);
   font-weight: 700;
   color: var(--white);

@@ -1,8 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Mono, Inter } from "next/font/google";
+import { Bricolage_Grotesque, DM_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { GoogleAnalytics } from '@/components/ui/Analytics/GoogleAnalytics';
+
+// Brand face for the whole site. Self-hosted via next/font (single woff2 from
+// our own origin, zero layout shift) — this replaced a render-blocking CSS
+// @import AND a duplicate <link> to fonts.googleapis.com, which also let the
+// CSP drop the Google Fonts origins entirely.
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bricolage',
+  axes: ['opsz'],
+});
 
 const dmMono = DM_Mono({
   subsets: ['latin'],
@@ -20,10 +31,11 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+// No maximumScale: capping it blocks pinch-zoom on iOS, which is a WCAG 1.4.4
+// failure — users must be able to zoom the loan terms they're agreeing to.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   themeColor: "#15803d",
 };
 
@@ -76,13 +88,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmMono.variable} ${inter.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={`${bricolage.variable} ${dmMono.variable} ${inter.variable}`}>
       <body>
         <a href="#main-content" className="skip-nav">Skip to main content</a>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID ?? ''} />

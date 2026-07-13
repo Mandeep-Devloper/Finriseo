@@ -1,6 +1,7 @@
 // Singleton app settings (always id = 1). Server-only.
 import 'server-only';
 import { db } from '@/lib/db';
+import { toNullableNumber } from '@/lib/money';
 
 export function getAppSettings() {
   return db.appSetting.findUnique({ where: { id: 1 } });
@@ -12,5 +13,5 @@ export async function getDefaultCommissionRate(): Promise<number | null> {
     where: { id: 1 },
     select: { defaultCommissionRate: true },
   });
-  return s?.defaultCommissionRate ?? null;
+  return toNullableNumber(s?.defaultCommissionRate);
 }

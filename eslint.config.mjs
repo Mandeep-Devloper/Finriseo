@@ -18,7 +18,6 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
-      "fix-remaining.js",
     ],
   },
 ];

@@ -13,13 +13,24 @@ import { OtpInput } from '@/components/ui/OtpInput';
 import { useToast } from '@/components/ui/Toast';
 import { otpService, applicationService } from '@/lib/services';
 import { sendFirebaseOtp, firebaseOtpError, OTP_DEV_BYPASS, OTP_DEV_BYPASS_CODE } from '@/lib/services/firebaseOtp';
+import { MAX_LOAN_DISPLAY } from '@/lib/constants';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 import styles from './page.module.css';
 
 export default function BasicInfoStep() {
   const router = useRouter();
   const { showToast } = useToast();
   const updateData = useApplicationStore((state) => state.updateData);
+  const resetData = useApplicationStore((state) => state.resetData);
   const applicationData = useApplicationStore((state) => state);
+
+  // Fresh-start guard: the success page no longer auto-wipes the store on a
+  // timer (so its confirmation survives refreshes) — instead, arriving back at
+  // step 1 with a COMPLETED application clears it, so the old referenceId can
+  // never be resumed into (and overwritten by) a new journey.
+  useEffect(() => {
+    if (applicationData.submitted) resetData();
+  }, [applicationData.submitted, resetData]);
 
   const [step, setStep] = useState<'form' | 'otp'>(
     (applicationData.mobile && !applicationData.otpVerified) ? 'otp' : 'form'
@@ -30,9 +41,13 @@ export default function BasicInfoStep() {
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const [otpValue, setOtpValue] = useState('');
-  // Both consents (terms/credit-bureau AND WhatsApp updates) are mandatory:
-  // they render locked ON and cannot be unticked.
-  
+  // T&C/credit-bureau consent is mandatory and shown as a DISCLOSURE (the
+  // affirmative act is pressing Continue with it adjacent) — a locked, pre-ticked
+  // checkbox only simulates a choice and confuses screen readers. The WhatsApp
+  // opt-in, by contrast, is a REAL choice the user can untick; it defaults on
+  // (service updates about their own application) and is persisted server-side.
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true);
+
   const hasAutoSent = React.useRef(false);
   // Holds the in-flight Firebase Phone Auth session used to confirm the code.
   const confirmationRef = React.useRef<ConfirmationResult | null>(null);
@@ -45,6 +60,9 @@ export default function BasicInfoStep() {
   useEffect(() => {
     if (hydratedFromQuery.current) return;
     hydratedFromQuery.current = true;
+    // Top of the funnel — without this event the GA funnel had no entry step,
+    // so hero→OTP conversion was unmeasurable.
+    trackEvent(EVENTS.APPLY_START);
     const sp = new URLSearchParams(window.location.search);
     const qMobile = sp.get('mobile') ?? '';
     const qName = sp.get('name') ?? '';
@@ -107,6 +125,7 @@ export default function BasicInfoStep() {
       return;
     }
     setIsLoading(false);
+    trackEvent(EVENTS.OTP_SENT);
     updateData({ fullName: values.fullName });
     setCurrentMobile(values.mobile);
     setStep('otp');
@@ -143,6 +162,7 @@ export default function BasicInfoStep() {
     // cold DB connection can take several seconds, and the user shouldn't wait
     // for it just to see the next form.
     setIsLoading(false);
+    trackEvent(EVENTS.OTP_VERIFIED);
     updateData({ mobile: currentMobile, otpVerified: true });
     router.push('/apply/basic-details');
 
@@ -155,6 +175,10 @@ export default function BasicInfoStep() {
         mobile: currentMobile,
         fullName: applicationData.fullName || '',
         referenceId: applicationData.referenceId || undefined,
+        // The mandatory consent disclosure was accepted by proceeding; record it.
+        consent: true,
+        // The user's actual WhatsApp choice at the moment of verification.
+        whatsappOptIn,
       })
       .then(({ data: started }) => {
         if (started?.referenceId) updateData({ referenceId: started.referenceId });
@@ -171,6 +195,7 @@ export default function BasicInfoStep() {
       return;
     }
     setTimer(60);
+    trackEvent(EVENTS.OTP_SENT, { resend: true });
     showToast('OTP resent successfully', 'success');
   };
 
@@ -185,7 +210,7 @@ export default function BasicInfoStep() {
         </h2>
         <p className={styles.subtitle}>
           {step === 'form'
-            ? 'Get a Loan up to ₹50,00,000 in Minutes.'
+            ? `Get a Loan up to ${MAX_LOAN_DISPLAY} in Minutes.`
             : <>Please enter the 6-digit OTP sent to{' '}<span className={styles.mobileHighlight}>+91&nbsp;{currentMobile}</span>
                 <button
                   type="button"
@@ -285,33 +310,27 @@ export default function BasicInfoStep() {
           </div>
 
           <div className={styles.bottomGroup}>
+          {/* Mandatory consent as a DISCLOSURE, not a fake checkbox: pressing
+              "Continue to Verify" with this adjacent is the affirmative act,
+              and the server records it (timestamp/version/IP/UA). */}
           <div className={styles.consentBox}>
-            <input
-              type="checkbox"
-              id="consentTerms"
-              className={styles.checkbox}
-              checked
-              readOnly
-              // Locked ON — mandatory consent that the user cannot untick.
-              onClick={(e) => e.preventDefault()}
-            />
-            <label htmlFor="consentTerms" className={styles.consentText}>
+            <p className={styles.consentText}>
               By proceeding, you agree to our <Link href="/terms" className={styles.link}>Terms &amp; Conditions</Link> and <Link href="/privacy-policy" className={styles.link}>Privacy Policy</Link>, and consent to us accessing your credit information from credit bureaus for processing your application.
-            </label>
+            </p>
           </div>
 
+          {/* Genuine optional opt-in — the user can untick it. */}
           <div className={styles.consentBox}>
             <input
               type="checkbox"
               id="consentWhatsapp"
               className={styles.checkbox}
-              checked
-              readOnly
-              // Locked ON — mandatory consent that the user cannot untick.
-              onClick={(e) => e.preventDefault()}
+              checked={whatsappOptIn}
+              onChange={(e) => setWhatsappOptIn(e.target.checked)}
+              disabled={isLoading}
             />
             <label htmlFor="consentWhatsapp" className={styles.consentText}>
-              I consent to receive loan-related updates, alerts, and communications via WhatsApp on my registered mobile number.
+              Send me loan-related updates, alerts, and communications via WhatsApp on my registered mobile number. (Optional)
             </label>
           </div>
 

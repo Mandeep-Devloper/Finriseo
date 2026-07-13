@@ -35,13 +35,13 @@
   border-radius: 8px;
   background: var(--forest-100);
   color: var(--forest-900);
-  font-family: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.05rem;
 }
 
 .logoText {
-  font-family: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--pure-white);

@@ -34,7 +34,7 @@
   border: none;
   cursor: pointer;
   text-align: left;
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: var(--text-lg, 1.125rem);
   font-weight: 600;
   color: var(--gray-900);

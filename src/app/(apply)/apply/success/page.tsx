@@ -34,24 +34,30 @@ export default function SuccessStep() {
 
     setMounted(true);
 
-    if (!applicationData.selectedOffer) {
-      router.replace('/apply');
-      return;
-    }
-
     // Snapshot values before any async work or store resets
     const offer = applicationData.selectedOffer;
     const refId = applicationData.referenceId;
     const appData = { ...applicationData };
 
+    // Refresh-safe guard: after a reload, selectedOffer (memory-only — it is
+    // deliberately NOT in sessionStorage) is gone, but submitted+referenceId
+    // survive. Only bounce a visitor who has NEITHER an offer to submit NOR a
+    // completed submission to show.
+    if (!offer && !(applicationData.submitted && refId)) {
+      router.replace('/apply');
+      return;
+    }
+
     // Only skip re-submitting if the final submit already succeeded before
     // (e.g. user refreshed this page). A referenceId alone isn't enough —
     // it now exists as soon as OTP is verified (draft application).
+    // No auto-reset here: the store is cleared when the user LEAVES via
+    // "Back to Home" (and by the step-1 fresh-start guard), so a refresh keeps
+    // this confirmation — and the reference ID — visible.
     if (applicationData.submitted && refId) {
       setSavedRef(refId);
       setSavedOffer(offer);
       setApiStatus('success');
-      setTimeout(() => resetData(), 2000);
       return;
     }
 
@@ -86,7 +92,6 @@ export default function SuccessStep() {
       setSavedOffer(offer);
       trackEvent(EVENTS.APPLICATION_COMPLETE);
       setApiStatus('success');
-      setTimeout(() => resetData(), 2000);
     };
 
     submit();
@@ -152,7 +157,11 @@ export default function SuccessStep() {
         </motion.div>
         <h2 className={styles.title}>Application Submitted!</h2>
         <p className={styles.subtitle}>
-          Your loan application has been successfully submitted to {savedOffer?.lender}.
+          {/* savedOffer survives in memory but not sessionStorage, so after a
+              refresh the lender name may be gone — fall back to generic copy. */}
+          {savedOffer
+            ? `Your loan application has been successfully submitted to ${savedOffer.lender}.`
+            : 'Your loan application has been successfully submitted.'}
         </p>
       </div>
 
@@ -219,15 +228,18 @@ export default function SuccessStep() {
       </div>
 
       <div className={styles.actions}>
-        <div className={styles.tooltipWrapper}>
-          <button type="button" className={`btn btn--ghost ${styles.trackBtn}`} disabled>
-            Track Application
-          </button>
-          <span className={styles.tooltip}>Coming Soon</span>
-        </div>
-        <button 
-          type="button" 
-          onClick={() => router.push('/')}
+        {/* The disabled "Track Application" button was removed: a dead control
+            with a hover-only "Coming Soon" tooltip was inaccessible and
+            misleading. Re-add a real link once the tracking UI ships (the
+            status API at /api/application/status/[referenceId] already works). */}
+        <button
+          type="button"
+          onClick={() => {
+            // Leaving the journey is the moment the funnel state is cleared —
+            // not a timer — so a refresh of THIS page keeps the confirmation.
+            resetData();
+            router.push('/');
+          }}
           className="btn btn--cta"
         >
           <Home size={16} />

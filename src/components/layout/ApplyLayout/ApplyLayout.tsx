@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { FinriseoLogo } from '@/components/ui/FinriseoLogo';
+import { MAX_LOAN_DISPLAY } from '@/lib/constants';
 import styles from './ApplyLayout.module.css';
 
 const STEPS = [
@@ -62,9 +63,9 @@ export function ApplyLayout({ children }: { children: React.ReactNode }) {
 
           <h1 className={styles.heroTitle}>
             Instant loans<br />
-            upto{' '}
+            up to{' '}
             <span className={styles.highlight}>
-              ₹5,00,000
+              {MAX_LOAN_DISPLAY}
               {/* Hand-drawn gold ellipse around the amount */}
               <svg
                 className={styles.circleSvg}
