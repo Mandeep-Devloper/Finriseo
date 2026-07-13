@@ -13,7 +13,17 @@ export const applicationService = {
 
   // Creates (or resumes) a draft Application row right after OTP verification,
   // so the lead is visible in the database from step 1.
-  startApplication: (data: { mobile: string; fullName: string; referenceId?: string }) =>
+  startApplication: (data: {
+    mobile: string;
+    fullName: string;
+    referenceId?: string;
+    // Mandatory Terms/Privacy/credit-bureau consent ticked at step 1. Sent so the
+    // server can persist an audit-grade consent record with the draft.
+    consent?: boolean;
+    // Optional WhatsApp-updates opt-in — a genuine user choice, persisted so
+    // ops only messages borrowers who actually agreed.
+    whatsappOptIn?: boolean;
+  }) =>
     apiClient.post<{ success: boolean; referenceId: string }>(
       '/api/application/start', data
     ),

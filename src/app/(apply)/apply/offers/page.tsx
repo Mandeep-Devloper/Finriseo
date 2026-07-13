@@ -42,11 +42,14 @@ export default function OffersStep() {
     setFetchError('');
     setPhase('working');
 
+    // No fallbacks here: the effect below guarantees these exist before load()
+    // runs. (Previously a missing amount silently became ₹3,00,000 and a missing
+    // income became 0 — producing offers for numbers the user never entered.)
     const { data, error } = await applicationService.fetchOffers({
       mobile: mobile || '',
-      loanAmount: Number(loanAmount) || 300000,
+      loanAmount: Number(loanAmount),
       employmentType: employmentType || '',
-      monthlyIncome: Number(monthlyIncome) || 0,
+      monthlyIncome: Number(monthlyIncome),
     });
 
     if (error || !data?.offers?.length) {
@@ -71,13 +74,29 @@ export default function OffersStep() {
       router.replace('/apply');
       return;
     }
+    // Data guard: offers are computed FROM these figures, so send the user back
+    // to the step that collects a missing one instead of fabricating a value.
+    if (!Number(loanAmount)) {
+      router.replace('/apply/basic-details');
+      return;
+    }
+    if (!Number(monthlyIncome) || !employmentType) {
+      router.replace('/apply/employment');
+      return;
+    }
     if (hasLoaded.current) return;
     hasLoaded.current = true;
     load();
-  }, [applicationData.otpVerified, router, load]);
+  }, [applicationData.otpVerified, loanAmount, monthlyIncome, employmentType, router, load]);
 
-  // Prevent flash before hydration / auth redirect
-  if (!mounted || !applicationData.otpVerified) {
+  // Prevent flash before hydration / auth+data redirects
+  if (
+    !mounted ||
+    !applicationData.otpVerified ||
+    !Number(loanAmount) ||
+    !Number(monthlyIncome) ||
+    !employmentType
+  ) {
     return null;
   }
 

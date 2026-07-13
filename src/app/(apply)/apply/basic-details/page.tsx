@@ -100,10 +100,12 @@ export default function BasicDetailsStep() {
               type="number"
               placeholder="eg ₹2,00,000"
               className={`form-input ${errors.loanAmount ? 'error' : ''}`}
+              aria-invalid={errors.loanAmount ? true : undefined}
+              aria-describedby={errors.loanAmount ? 'loanAmount-error' : undefined}
               {...register('loanAmount')}
             />
             {errors.loanAmount && (
-              <p className={styles.errorText}>{errors.loanAmount.message}</p>
+              <p id="loanAmount-error" role="alert" className={styles.errorText}>{errors.loanAmount.message}</p>
             )}
           </div>
 
@@ -117,10 +119,12 @@ export default function BasicDetailsStep() {
               type="email"
               placeholder="you@example.com"
               className={`form-input ${errors.email ? 'error' : ''}`}
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               {...register('email')}
             />
             {errors.email && (
-              <p className={styles.errorText}>{errors.email.message}</p>
+              <p id="email-error" role="alert" className={styles.errorText}>{errors.email.message}</p>
             )}
           </div>
 
@@ -132,13 +136,16 @@ export default function BasicDetailsStep() {
             <input
               id="pinCode"
               type="text"
+              inputMode="numeric"
               placeholder="Enter PIN Code"
               maxLength={6}
               className={`form-input ${errors.pinCode ? 'error' : ''}`}
+              aria-invalid={errors.pinCode ? true : undefined}
+              aria-describedby={errors.pinCode ? 'pinCode-error' : undefined}
               {...register('pinCode')}
             />
             {errors.pinCode && (
-              <p className={styles.errorText}>{errors.pinCode.message}</p>
+              <p id="pinCode-error" role="alert" className={styles.errorText}>{errors.pinCode.message}</p>
             )}
           </div>
         </div>

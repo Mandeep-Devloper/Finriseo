@@ -7,6 +7,9 @@ interface Props {
 
 export function GoogleAnalytics({ gaId }: Props) {
   if (process.env.NODE_ENV !== 'production') return null;
+  // Without an ID this would still inject `gtag/js?id=` — a broken request on
+  // every page view whenever NEXT_PUBLIC_GA_ID is unset in production.
+  if (!gaId) return null;
   return (
     <>
       <Script

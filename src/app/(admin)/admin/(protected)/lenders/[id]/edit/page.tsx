@@ -4,13 +4,18 @@ import { ChevronLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth/admin';
 import { can } from '@/lib/auth/permissions';
+import { toNullableNumber, type Decimalish } from '@/lib/money';
 import { LenderForm, type LenderFormValues } from '../../LenderForm';
 import styles from '../../lenders.module.css';
 
 export const dynamic = 'force-dynamic';
 
-// Numbers/nulls → form strings ('' for unset). Keeps LenderForm purely string-state.
-const s = (n: number | null | undefined) => (n == null ? '' : String(n));
+// Prisma Decimal / number / null → form strings ('' for unset). Keeps LenderForm
+// purely string-state and normalizes Decimal columns to their numeric text.
+const s = (n: Decimalish) => {
+  const num = toNullableNumber(n);
+  return num == null ? '' : String(num);
+};
 
 export default async function EditLenderPage({
   params,

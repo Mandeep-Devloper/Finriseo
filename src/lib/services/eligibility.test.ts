@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Prisma, type Lender } from '@prisma/client';
 import { db } from '@/lib/db';
 import {
   getEligibleLenders,
@@ -8,7 +9,7 @@ import {
 } from '@/lib/services/eligibility';
 
 // The eligibility engine's DB access is a single findMany; everything under
-// test is the filtering/clamping logic on top of it.
+// test is the filtering/clamping/mapping logic on top of it.
 vi.mock('@/lib/db', () => ({
   db: { lender: { findMany: vi.fn() } },
 }));
@@ -16,6 +17,8 @@ vi.mock('@/lib/db', () => ({
 const findMany = vi.mocked(db.lender.findMany);
 
 let nextId = 1;
+// Fixtures are the NUMERIC domain shape (EligibleLender) the engine emits after
+// mapping Prisma's Decimal columns — so getEligibleLenders results toEqual them.
 function makeLender(overrides: Partial<EligibleLender> = {}): EligibleLender {
   return {
     id: nextId++,
@@ -26,22 +29,19 @@ function makeLender(overrides: Partial<EligibleLender> = {}): EligibleLender {
     color: '#22c55e',
     minIncome: 0,
     maxMultiplier: 10,
-    active: true,
-    priority: 0,
-    logoUrl: null,
-    interestRateMax: null,
     minAmount: null,
     maxAmount: null,
-    minAge: null,
-    maxAge: null,
-    maxFoir: null,
     employmentTypes: [],
-    loanTypes: [],
-    commissionRate: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    priority: 0,
     ...overrides,
-  } as EligibleLender;
+  };
+}
+
+// The real query returns Prisma rows (Decimal columns); the engine maps them to
+// numeric domain lenders. Feeding numeric fixtures through the mock is equivalent
+// (toNumber() is identity on numbers) and keeps fixtures readable.
+function mockLenders(lenders: EligibleLender[]) {
+  findMany.mockResolvedValue(lenders as unknown as Lender[]);
 }
 
 beforeEach(() => {
@@ -62,7 +62,7 @@ describe('getEligibleLenders', () => {
 
   it('treats an empty employmentTypes list as "any employment"', async () => {
     const anyEmployment = makeLender({ employmentTypes: [] });
-    findMany.mockResolvedValue([anyEmployment]);
+    mockLenders([anyEmployment]);
     const result = await getEligibleLenders({
       monthlyIncome: 40000,
       employmentType: 'Self Employed',
@@ -72,7 +72,7 @@ describe('getEligibleLenders', () => {
 
   it('drops restricted lenders when the borrower type is not listed or unknown', async () => {
     const salariedOnly = makeLender({ employmentTypes: ['Salaried'] });
-    findMany.mockResolvedValue([salariedOnly]);
+    mockLenders([salariedOnly]);
 
     expect(
       await getEligibleLenders({ monthlyIncome: 40000, employmentType: 'Self Employed' })
@@ -85,12 +85,39 @@ describe('getEligibleLenders', () => {
 
   it('drops lenders whose minAmount floor exceeds the requested amount', async () => {
     const bigTicket = makeLender({ minAmount: 500000 });
-    findMany.mockResolvedValue([bigTicket]);
+    mockLenders([bigTicket]);
 
     expect(await getEligibleLenders({ monthlyIncome: 40000, loanAmount: 100000 })).toEqual([]);
     expect(await getEligibleLenders({ monthlyIncome: 40000, loanAmount: 500000 })).toEqual([bigTicket]);
     // No requested amount → minAmount cannot disqualify.
     expect(await getEligibleLenders({ monthlyIncome: 40000 })).toEqual([bigTicket]);
+  });
+
+  it('maps Prisma Decimal columns to plain numbers at the DB boundary', async () => {
+    // Feed a row exactly as Prisma returns it (Decimal money/rate columns) and
+    // confirm the engine emits numbers downstream code can do arithmetic on.
+    const dbRow = {
+      id: 7,
+      name: 'Decimal Bank',
+      interestRate: new Prisma.Decimal('10.490'),
+      tenureMonths: 36,
+      processingFee: '1.5%',
+      color: '#0369a1',
+      minIncome: new Prisma.Decimal('25000.00'),
+      maxMultiplier: new Prisma.Decimal('8.000'),
+      minAmount: new Prisma.Decimal('50000.00'),
+      maxAmount: null,
+      employmentTypes: [],
+      priority: 5,
+    } as unknown as Lender;
+    findMany.mockResolvedValue([dbRow]);
+
+    const [lender] = await getEligibleLenders({ monthlyIncome: 40000, loanAmount: 100000 });
+    expect(lender.interestRate).toBe(10.49);
+    expect(lender.minIncome).toBe(25000);
+    expect(lender.maxMultiplier).toBe(8);
+    expect(lender.minAmount).toBe(50000);
+    expect(typeof lender.interestRate).toBe('number');
   });
 });
 
@@ -123,7 +150,7 @@ describe('buildOffers', () => {
 
 describe('resolveSubmission', () => {
   it('rejects a selectedOfferId outside the eligible set (tampering)', async () => {
-    findMany.mockResolvedValue([makeLender({ id: 1 })]);
+    mockLenders([makeLender({ id: 1 })]);
     const result = await resolveSubmission({
       loanAmount: 200000,
       monthlyIncome: 50000,
@@ -133,7 +160,7 @@ describe('resolveSubmission', () => {
   });
 
   it('clamps the loan amount to the selected lender ceiling', async () => {
-    findMany.mockResolvedValue([makeLender({ id: 1, maxMultiplier: 4 })]);
+    mockLenders([makeLender({ id: 1, maxMultiplier: 4 })]);
     const result = await resolveSubmission({
       loanAmount: 900000,
       monthlyIncome: 50000,
@@ -143,7 +170,7 @@ describe('resolveSubmission', () => {
   });
 
   it('uses the best available ceiling when no offer was selected', async () => {
-    findMany.mockResolvedValue([
+    mockLenders([
       makeLender({ id: 1, maxMultiplier: 4 }),
       makeLender({ id: 2, maxMultiplier: 8, maxAmount: 350000 }),
     ]);

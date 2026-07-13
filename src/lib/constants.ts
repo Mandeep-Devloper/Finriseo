@@ -1,3 +1,20 @@
+// Versioned borrower consent. Stored on each Application (consentVersion) so we
+// can prove WHICH Terms/Privacy revision a borrower agreed to. Bump this whenever
+// the published Terms & Conditions / Privacy Policy text materially changes.
+// TODO(legal): keep this value in lockstep with the published policy version —
+// the wording and effective date are a legal/business decision, not code.
+export const CONSENT_VERSION = '2026-07-04';
+
+// Single source of truth for the user-facing "loans up to X" claim. Before this
+// existed the site showed FOUR different ceilings at once (₹5L in the apply side
+// panel, ₹10L on the hero, ₹50L on the apply step, ₹1Cr in validation copy) —
+// which reads as untrustworthy in a financial product. ₹10,00,000 was chosen
+// because the hero and the EMI calculator bounds already said it.
+// TODO(business): confirm the real marketed ceiling and change it HERE only.
+// (The server-side validation max in validations.ts is a deliberately generous
+// upper bound, not marketing copy.)
+export const MAX_LOAN_DISPLAY = '₹10,00,000';
+
 export const COMPANY = {
   name: 'Finriseo',
   legalName: 'UpAndAlone Fintech Pvt. Ltd.',

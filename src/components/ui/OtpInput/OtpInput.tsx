@@ -85,9 +85,10 @@ export function OtpInput({ length = 6, onComplete, onChange, error, disabled = f
     }
   };
 
+  const errorId = 'otp-error';
   return (
     <div className={styles.container}>
-      <div className={styles.inputWrapper} role="group" aria-label="Enter OTP">
+      <div className={styles.inputWrapper} role="group" aria-label="Enter the 6-digit OTP">
         {otp.map((digit, i) => (
           <input
             key={i}
@@ -102,11 +103,14 @@ export function OtpInput({ length = 6, onComplete, onChange, error, disabled = f
             onPaste={handlePaste}
             disabled={disabled}
             aria-label={`OTP digit ${i + 1}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
             className={`${styles.input} ${error ? styles.inputError : ''}`}
           />
         ))}
       </div>
-      {error && <p className={styles.errorText}>{error}</p>}
+      {/* role=alert so screen readers announce a wrong/expired OTP immediately. */}
+      {error && <p id={errorId} role="alert" className={styles.errorText}>{error}</p>}
     </div>
   );
 }

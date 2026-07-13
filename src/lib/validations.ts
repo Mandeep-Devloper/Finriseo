@@ -59,6 +59,13 @@ export const applicationStartSchema = z.object({
   mobile,
   fullName: z.string().trim().min(2).max(120),
   referenceId: z.string().optional(),
+  // The borrower ticked the mandatory Terms/Privacy/credit-bureau consent at
+  // step 1. Optional here for backward compatibility; when true, the server
+  // records an audit-grade consent record (who/when/version/IP/UA).
+  consent: z.boolean().optional(),
+  // OPTIONAL WhatsApp-updates opt-in (a genuine choice — see the apply page).
+  // Absent means "no signal", which stays NULL in the DB, distinct from false.
+  whatsappOptIn: z.boolean().optional(),
 });
 
 // POST /api/application/submit
@@ -130,8 +137,16 @@ export const adminApplicationPatchSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('disbursement'),
     chosenLenderId: z.number().int().positive(),
-    disbursedAmount: z.coerce.number().positive(),
-    disbursedAt: z.coerce.date(),
+    // Bounded: an unbounded amount lets a typo (extra zeros) poison commission
+    // and disbursal KPIs. ₹100 Cr is far above any single retail loan here.
+    disbursedAmount: z.coerce.number().positive().max(1_000_000_000),
+    // A disbursement is a PAST event — reject future dates (small tolerance for
+    // timezone skew between the admin's browser and the server).
+    disbursedAt: z.coerce
+      .date()
+      .refine((d) => d.getTime() <= Date.now() + 24 * 60 * 60 * 1000, {
+        message: 'Disbursement date cannot be in the future',
+      }),
   }),
 ]);
 

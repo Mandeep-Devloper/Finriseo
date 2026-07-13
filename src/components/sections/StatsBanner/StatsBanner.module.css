@@ -25,7 +25,7 @@
 }
 
 .statValue {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
   font-weight: 800;
   color: var(--green-300);

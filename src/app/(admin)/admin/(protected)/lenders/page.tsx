@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth/admin';
 import { can } from '@/lib/auth/permissions';
 import { fmtMoney } from '@/lib/admin/format';
+import { toNumber } from '@/lib/money';
 import { LenderActiveToggle } from './LenderActiveToggle';
 import styles from './lenders.module.css';
 
@@ -65,11 +66,11 @@ export default async function LendersPage() {
                     {l.name}
                   </td>
                   <td className={styles.mono}>
-                    {l.interestRate}{l.interestRateMax ? `–${l.interestRateMax}` : ''}%
+                    {toNumber(l.interestRate)}{l.interestRateMax != null ? `–${toNumber(l.interestRateMax)}` : ''}%
                   </td>
                   <td className={styles.num}>{l.tenureMonths}m</td>
                   <td className={styles.num}>{fmtMoney(l.minIncome)}</td>
-                  <td className={styles.num}>{l.commissionRate != null ? `${l.commissionRate}%` : '—'}</td>
+                  <td className={styles.num}>{l.commissionRate != null ? `${toNumber(l.commissionRate)}%` : '—'}</td>
                   <td className={styles.num}>{l.priority}</td>
                   <td><LenderActiveToggle id={l.id} active={l.active} /></td>
                   <td>

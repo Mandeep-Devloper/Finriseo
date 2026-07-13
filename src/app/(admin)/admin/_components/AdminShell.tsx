@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import type { Role } from '@prisma/client';
-import { can } from '@/lib/auth/permissions';
+import { can, ROLE_LABELS } from '@/lib/auth/permissions';
 import { NAV_ITEMS } from './nav';
 import styles from './AdminShell.module.css';
 
@@ -14,12 +14,6 @@ interface AdminInfo {
   email: string;
   role: Role;
 }
-
-const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ADMIN: 'Admin',
-  AGENT: 'Agent',
-};
 
 export function AdminShell({
   admin,
@@ -125,7 +119,7 @@ export function AdminShell({
           <div className={styles.userBox}>
             <div className={styles.userText}>
               <span className={styles.userName}>{admin.name}</span>
-              <span className={styles.userRole}>{ROLE_LABEL[admin.role]}</span>
+              <span className={styles.userRole}>{ROLE_LABELS[admin.role]}</span>
             </div>
             <span className={styles.avatar} aria-hidden="true">
               {admin.name.charAt(0).toUpperCase()}

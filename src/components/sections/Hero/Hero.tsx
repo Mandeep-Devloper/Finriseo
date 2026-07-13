@@ -7,6 +7,8 @@ import { GitCompare, ClipboardCheck, Zap, FileX, ArrowRight } from 'lucide-react
 import Link from 'next/link';
 import { z } from 'zod';
 import { basicInfoSchema } from '@/lib/validations';
+import { MAX_LOAN_DISPLAY } from '@/lib/constants';
+import { trackEvent, EVENTS } from '@/lib/analytics';
 import styles from './Hero.module.css';
 
 const WORDS = [
@@ -26,6 +28,9 @@ export default function Hero() {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
+    // The rotating headline is pure decoration — freeze it on the first word
+    // for users who ask for reduced motion (CSS can't stop a JS interval).
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const interval = setInterval(() => {
       setShow(false);
       setTimeout(() => {
@@ -60,6 +65,7 @@ export default function Hero() {
   const isMobileValid = /^[6-9]\d{9}$/.test(mobileValue);
 
   const onSubmit = (data: FormData) => {
+    trackEvent(EVENTS.HERO_FORM_SUBMIT);
     // Open the application journey in a NEW browser tab (MoneyView-style),
     // carrying name + mobile as query params so the fresh tab can jump straight
     // to the OTP step. A new tab doesn't inherit this tab's in-memory store, so
@@ -77,12 +83,6 @@ export default function Hero() {
       <div className={styles.heroGrid}>
         {/* LEFT */}
         <div className={styles.heroLeft}>
-
-          {/* Trust badge */}
-          {/* <div className={styles.trustBadge}>
-            <span className={styles.trustDotOuter} />
-            Verified NBFC Partners — 100% Secure
-          </div> */}
 
           {/* Heading */}
           <h1 className={styles.heroTitle}>
@@ -129,14 +129,9 @@ export default function Hero() {
         {/* RIGHT — FORM */}
         <div className={styles.heroRight}>
           <div className={styles.formCard}>
-            {/* <div className={styles.trustBadgeInForm}>
-              <span className={styles.trustDot} />
-              RBI Registered NBFC Partners — 100% Secure
-            </div> */}
-
             <h2 className={styles.formCardTitle}>Get Personalized<br></br>Loan Offers</h2>
             <p className={styles.formCardSubtitle}>
-              Get a Loan up to ₹10,00,000 in Minutes
+              Get a Loan up to {MAX_LOAN_DISPLAY} in Minutes
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)}>

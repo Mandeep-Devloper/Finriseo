@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin, adminAuthErrorResponse } from '@/lib/auth/admin';
 import { can } from '@/lib/auth/permissions';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { recordAdminAudit, type AdminAuditAction } from '@/lib/services/auditLog';
 import { adminApplicationPatchSchema as schema } from '@/lib/validations';
 
@@ -111,6 +112,7 @@ export async function PATCH(
   } catch (err) {
     const authErr = adminAuthErrorResponse(err);
     if (authErr) return authErr;
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+    await reportServerError('admin-application-mutate', err);
+    return serverError();
   }
 }

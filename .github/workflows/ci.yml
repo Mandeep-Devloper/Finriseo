@@ -1,7 +1,7 @@
-# CI gate: typecheck → lint → tests → production build, failing fast on the
-# first broken step. No secrets are needed: server env validation is lazy
-# (src/lib/env.ts) and firebase/prisma init lazily, so `next build` succeeds
-# with no env vars — verified locally with .env absent.
+# CI gate: schema-validate → typecheck → lint → tests → build, plus a
+# non-blocking dependency audit. Fails fast on the first broken step. No secrets
+# are needed: server env validation is lazy (src/lib/env.ts) and firebase/prisma
+# init lazily, so `next build` succeeds with no env vars — verified with .env absent.
 #
 # Note: this intentionally runs `next build` directly, NOT `npm run build` —
 # the package script also runs `prisma migrate deploy`, which needs the real
@@ -36,6 +36,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Catch schema/migration mistakes (invalid types, relations) before typecheck.
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -47,3 +51,11 @@ jobs:
 
       - name: Production build
         run: npx next build
+
+      # Report-only: surfaces known advisories in the run log without failing the
+      # build (the current advisories are transitive dev-time deps of firebase-admin
+      # and are tracked separately). Tighten to `--audit-level=high` and drop
+      # continue-on-error once the tree is clean.
+      - name: Dependency audit (report only)
+        continue-on-error: true
+        run: npm audit --omit=dev

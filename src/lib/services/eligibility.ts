@@ -3,10 +3,45 @@
 // (to re-validate the figures the client posts). Keeping both on the same logic
 // stops the client-supplied loanAmount / selectedOfferId from being trusted as
 // authoritative: the server always re-derives them from the live Lender table.
+import type { Lender } from '@prisma/client';
 import { calculateEMI } from '@/lib/financial';
 import { db } from '@/lib/db';
+import { toNumber, toNullableNumber } from '@/lib/money';
 
-export type EligibleLender = Awaited<ReturnType<typeof getEligibleLenders>>[number];
+// Domain view of a Lender with money/rate columns projected from Prisma `Decimal`
+// to plain `number`, so all offer/eligibility math below runs on numbers (no
+// Decimal operands leaking into arithmetic). This is the DB→domain boundary.
+export interface EligibleLender {
+  id: number;
+  name: string;
+  interestRate: number;
+  tenureMonths: number;
+  processingFee: string;
+  color: string;
+  minIncome: number;
+  maxMultiplier: number;
+  minAmount: number | null;
+  maxAmount: number | null;
+  employmentTypes: string[];
+  priority: number;
+}
+
+function toDomainLender(l: Lender): EligibleLender {
+  return {
+    id: l.id,
+    name: l.name,
+    interestRate: toNumber(l.interestRate),
+    tenureMonths: l.tenureMonths,
+    processingFee: l.processingFee,
+    color: l.color,
+    minIncome: toNumber(l.minIncome),
+    maxMultiplier: toNumber(l.maxMultiplier),
+    minAmount: toNullableNumber(l.minAmount),
+    maxAmount: toNullableNumber(l.maxAmount),
+    employmentTypes: l.employmentTypes,
+    priority: l.priority,
+  };
+}
 
 export interface Offer {
   id: number;
@@ -41,14 +76,16 @@ export interface EligibilityCriteria {
  * Existing lenders (employmentTypes []=default, minAmount null) are unaffected,
  * so borrower behaviour is unchanged until an admin sets these values.
  */
-export async function getEligibleLenders(criteria: EligibilityCriteria) {
+export async function getEligibleLenders(
+  criteria: EligibilityCriteria
+): Promise<EligibleLender[]> {
   const { monthlyIncome, employmentType, loanAmount } = criteria;
-  const lenders = await db.lender.findMany({
+  const rows = await db.lender.findMany({
     where: { active: true, minIncome: { lte: monthlyIncome } },
     orderBy: [{ priority: 'desc' }, { interestRate: 'asc' }],
   });
 
-  return lenders.filter((l) => {
+  return rows.map(toDomainLender).filter((l) => {
     if (l.employmentTypes.length > 0) {
       if (!employmentType || !l.employmentTypes.includes(employmentType)) return false;
     }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { db } from '@/lib/db';
+import { getClientIp } from '@/lib/http/ip';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import {
   createAdminSessionCookie,
@@ -34,7 +36,7 @@ function unauthorized() {
 export async function POST(req: NextRequest) {
   try {
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') ?? headersList.get('x-real-ip') ?? 'unknown';
+    const ip = getClientIp(headersList);
 
     // IP rate-limit BEFORE the (more expensive) token verification — primary
     // brute-force / abuse control on this endpoint. 10 attempts / 15 min.
@@ -122,14 +124,10 @@ export async function POST(req: NextRequest) {
 
     return res;
   } catch (err) {
-    // Surface the real cause (e.g. a stale in-memory Prisma client after a
-    // migration → restart `next dev`; or an unexpected DB/Firebase failure)
-    // instead of a silent 500. PII-free: logs error code/message/name only.
-    console.error('[admin-login] unhandled error', {
-      name: (err as { name?: string })?.name,
-      code: (err as { code?: string })?.code,
-      message: (err as { message?: string })?.message,
-    });
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+    // PII-free report (error name/code/message only) + Sentry forward when a DSN
+    // is configured. Common cause: a stale in-memory Prisma client after a
+    // migration → restart `next dev`; or an unexpected DB/Firebase failure.
+    await reportServerError('admin-login', err);
+    return serverError();
   }
 }

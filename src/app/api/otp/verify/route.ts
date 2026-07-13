@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import { createSessionCookie, sessionCookieOptions, SESSION_COOKIE } from '@/lib/auth/session';
+import { reportServerError, serverError } from '@/lib/http/errors';
 import { otpVerifySchema as schema } from '@/lib/validations';
 import { logOtp, maskPhone, checkPhoneRateLimit } from '../_otpStore';
 
@@ -58,11 +59,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.info('[otp-verify] Token OK', {
-      tokenPhone: maskPhone(decoded.phone_number ?? ''),
-      expectedPhone: maskPhone(mobile),
-      authTimeAgeSec: Math.round(Date.now() / 1000 - decoded.auth_time),
-    });
+    // Dev-only: per-verify success logging is noise in production now that the
+    // flow is proven (failure paths below still log unconditionally).
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[otp-verify] Token OK', {
+        tokenPhone: maskPhone(decoded.phone_number ?? ''),
+        expectedPhone: maskPhone(mobile),
+        authTimeAgeSec: Math.round(Date.now() / 1000 - decoded.auth_time),
+      });
+    }
 
     // Reject stale tokens: a Firebase ID token stays valid ~1h, so without a
     // freshness check an old token from a prior sign-in could be replayed to
@@ -105,7 +110,8 @@ export async function POST(req: NextRequest) {
       });
     }
     return res;
-  } catch {
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+  } catch (err) {
+    await reportServerError('otp-verify', err);
+    return serverError();
   }
 }

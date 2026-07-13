@@ -50,7 +50,7 @@
 }
 
 .message {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-heading);
   font-size: var(--text-sm, 0.875rem);
   font-weight: 500;
   color: var(--gray-800);
