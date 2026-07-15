@@ -35,6 +35,11 @@ let verifier: RecaptchaVerifier | null = null;
 
 function getVerifier(): RecaptchaVerifier {
   if (!verifier) {
+    // Drop any stale widget left in the container — e.g. when Fast Refresh (or
+    // a failed clear()) resets our module state while the DOM keeps the old
+    // iframe. Rendering a new verifier into a non-empty container throws
+    // "reCAPTCHA has already been rendered in this element".
+    document.getElementById(RECAPTCHA_CONTAINER)?.replaceChildren();
     verifier = new RecaptchaVerifier(getClientAuth(), RECAPTCHA_CONTAINER, {
       size: 'invisible',
     });
@@ -70,6 +75,10 @@ export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResul
     return devBypassConfirmation(mobile);
   }
   try {
+    // Always start from a fresh verifier: reCAPTCHA tokens are single-use, so
+    // reusing the widget from a previous send (e.g. on Resend) gets its spent
+    // token rejected with auth/invalid-app-credential.
+    resetVerifier();
     const result = await signInWithPhoneNumber(getClientAuth(), `+91${mobile}`, getVerifier());
     console.info('[firebase-otp] SMS dispatched OK — confirmation session ready.');
     return result;

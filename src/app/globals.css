@@ -385,3 +385,10 @@ img {
   }
   html { scroll-behavior: auto; }
 }
+
+/* Hide the floating reCAPTCHA badge (Firebase Phone Auth). Google permits this
+   only because the required attribution notice is rendered inline on the apply
+   step (see .recaptchaNotice in apply/page.module.css) — keep them in sync. */
+.grecaptcha-badge {
+  visibility: hidden;
+}

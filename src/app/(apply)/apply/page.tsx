@@ -32,9 +32,11 @@ export default function BasicInfoStep() {
     if (applicationData.submitted) resetData();
   }, [applicationData.submitted, resetData]);
 
-  const [step, setStep] = useState<'form' | 'otp'>(
-    (applicationData.mobile && !applicationData.otpVerified) ? 'otp' : 'form'
-  );
+  // Always start on 'form' so the first client render matches the server HTML:
+  // the store restores from sessionStorage on the client only, so deriving the
+  // step here would hydrate 'otp' against server-rendered 'form' (hydration
+  // error). The mobile/otpVerified effect below moves to 'otp' after mount.
+  const [step, setStep] = useState<'form' | 'otp'>('form');
   const [currentMobile, setCurrentMobile] = useState<string>(applicationData.mobile || '');
   const [otpError, setOtpError] = useState<string>('');
   const [apiError, setApiError] = useState('');
@@ -345,6 +347,15 @@ export default function BasicInfoStep() {
           </div>
         </div>
       )}
+
+      {/* Required reCAPTCHA attribution: the floating badge is hidden via CSS
+          (.grecaptcha-badge in globals.css), which Google permits only if this
+          notice is shown in the flow instead. Do not remove one without the other. */}
+      <p className={styles.recaptchaNotice}>
+        This site is protected by reCAPTCHA and the Google{' '}
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and{' '}
+        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
+      </p>
     </div>
   );
 }
