@@ -5,17 +5,22 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Pencil, CheckCircle2 } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step1Schema, Step1FormData } from '@/lib/validations';
 import type { ConfirmationResult } from 'firebase/auth';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { useToast } from '@/components/ui/Toast';
 import { otpService, applicationService } from '@/lib/services';
-import { sendFirebaseOtp, firebaseOtpError, OTP_DEV_BYPASS, OTP_DEV_BYPASS_CODE } from '@/lib/services/firebaseOtp';
+import { sendFirebaseOtp, prewarmFirebaseOtp, firebaseOtpError, OTP_DEV_BYPASS, OTP_DEV_BYPASS_CODE } from '@/lib/services/firebaseOtp';
 import { MAX_LOAN_DISPLAY } from '@/lib/constants';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 import styles from './page.module.css';
+
+// SMS delivery status, decoupled from verification: the OTP screen shows
+// instantly and the send runs in the background, so the inputs stay usable
+// while this progresses idle → sending → sent (or failed → Resend enabled).
+type SendState = 'idle' | 'sending' | 'sent' | 'failed';
 
 export default function BasicInfoStep() {
   const router = useRouter();
@@ -40,7 +45,8 @@ export default function BasicInfoStep() {
   const [currentMobile, setCurrentMobile] = useState<string>(applicationData.mobile || '');
   const [otpError, setOtpError] = useState<string>('');
   const [apiError, setApiError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [sendState, setSendState] = useState<SendState>('idle');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [timer, setTimer] = useState(60);
   const [otpValue, setOtpValue] = useState('');
   // T&C/credit-bureau consent is mandatory and shown as a DISCLOSURE (the
@@ -53,6 +59,20 @@ export default function BasicInfoStep() {
   const hasAutoSent = React.useRef(false);
   // Holds the in-flight Firebase Phone Auth session used to confirm the code.
   const confirmationRef = React.useRef<ConfirmationResult | null>(null);
+  // Re-entrancy guard for verification: auto-verify (6th digit / WebOTP) and
+  // the fallback button can otherwise race and confirm() twice.
+  const verifyingRef = React.useRef(false);
+  // Monotonic send counter: if the user edits the number while a send is still
+  // in flight, the stale send's result must not overwrite the new session.
+  const sendSeqRef = React.useRef(0);
+  const sendingMobileRef = React.useRef<string | null>(null);
+
+  // Warm up Firebase Auth + the invisible reCAPTCHA while the user is typing
+  // (or, on the hero handoff, in parallel with the auto-send) — script download
+  // and widget render are the slowest part of the first OTP send.
+  useEffect(() => {
+    void prewarmFirebaseOtp();
+  }, []);
 
   // When the journey is opened in a fresh browser tab from the landing hero,
   // name + mobile arrive as query params (a new tab doesn't inherit the opener
@@ -78,6 +98,7 @@ export default function BasicInfoStep() {
   useEffect(() => {
     if (applicationData.mobile && !applicationData.otpVerified && !hasAutoSent.current) {
       hasAutoSent.current = true;
+      setCurrentMobile(applicationData.mobile);
       setStep('otp');
       // Only auto-send once per mobile per browser session. A page reload loses
       // the in-memory confirmation but must NOT silently fire another (paid) SMS;
@@ -88,10 +109,11 @@ export default function BasicInfoStep() {
         return;
       }
       sessionStorage.setItem(sentKey, '1');
-      handleSendOtp({ fullName: applicationData.fullName || '', mobile: applicationData.mobile, consent: true });
+      setTimer(60);
+      void dispatchOtp(applicationData.mobile);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applicationData.mobile, applicationData.otpVerified, applicationData.fullName]);
+  }, [applicationData.mobile, applicationData.otpVerified]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -103,9 +125,31 @@ export default function BasicInfoStep() {
     return () => clearInterval(interval);
   }, [step]);
 
+  // Web OTP API (Chrome on Android): if the OS hands us the code from the SMS,
+  // fill the boxes and verify without any typing. No-ops silently where the
+  // API is unavailable (iOS relies on the keyboard's one-time-code suggestion,
+  // handled by the input's autocomplete attribute instead).
+  useEffect(() => {
+    if (step !== 'otp' || !('OTPCredential' in window)) return;
+    const ac = new AbortController();
+    navigator.credentials
+      .get({ otp: { transport: ['sms'] }, signal: ac.signal } as CredentialRequestOptions)
+      .then((cred) => {
+        const code = (cred as { code?: string } | null)?.code?.replace(/\D/g, '').slice(0, 6);
+        if (code?.length === 6) {
+          setOtpValue(code);
+          void handleVerifyOtp(code);
+        }
+      })
+      .catch(() => { /* aborted, dismissed, or unsupported — user types instead */ });
+    return () => ac.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
@@ -116,33 +160,87 @@ export default function BasicInfoStep() {
     }
   });
 
-  const handleSendOtp = async (values: Step1FormData) => {
-    setIsLoading(true);
+  // Returning to the form (Edit pencil) must show the values being edited —
+  // defaultValues are only captured at mount, before the hero-handoff store
+  // hydration lands.
+  useEffect(() => {
+    if (step === 'form') {
+      reset({
+        fullName: applicationData.fullName || '',
+        mobile: currentMobile || applicationData.mobile || '',
+        consent: true,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  /**
+   * Fire the SMS in the background — never awaited by navigation, so the OTP
+   * screen is already visible while this runs. Duplicate-send protection:
+   * skips if the same number is already in flight; a newer send supersedes a
+   * stale one via the sequence counter.
+   */
+  const dispatchOtp = async (mobile: string, opts?: { resend?: boolean }) => {
+    if (sendingMobileRef.current === mobile) return;
+    sendingMobileRef.current = mobile;
+    const seq = ++sendSeqRef.current;
+    setSendState('sending');
     setApiError('');
     try {
-      confirmationRef.current = await sendFirebaseOtp(values.mobile);
+      const confirmation = await sendFirebaseOtp(mobile);
+      if (seq !== sendSeqRef.current) return; // superseded by a newer send
+      confirmationRef.current = confirmation;
+      setSendState('sent');
+      setTimer(60);
+      trackEvent(EVENTS.OTP_SENT, opts?.resend ? { resend: true } : undefined);
+      if (opts?.resend) showToast('OTP resent successfully', 'success');
     } catch (err) {
-      setIsLoading(false);
+      if (seq !== sendSeqRef.current) return;
+      setSendState('failed');
       setApiError(firebaseOtpError(err));
+      setTimer(0); // unlock Resend immediately — that's the retry path
+    } finally {
+      if (sendingMobileRef.current === mobile) sendingMobileRef.current = null;
+    }
+  };
+
+  const handleSendOtp = (values: Step1FormData) => {
+    updateData({ fullName: values.fullName });
+
+    // Coming back from "edit number" without changing it: the previous OTP
+    // session is still valid — return to the OTP screen without burning a
+    // second SMS.
+    if (values.mobile === currentMobile && confirmationRef.current && sendState === 'sent') {
+      setStep('otp');
       return;
     }
-    setIsLoading(false);
-    trackEvent(EVENTS.OTP_SENT);
-    updateData({ fullName: values.fullName });
+
+    // Show the OTP screen IMMEDIATELY; the SMS dispatch runs in the background
+    // and reports through the sendState status line.
+    confirmationRef.current = null;
     setCurrentMobile(values.mobile);
+    setOtpValue('');
+    setOtpError('');
     setStep('otp');
     setTimer(60);
+    void dispatchOtp(values.mobile);
   };
 
   const handleVerifyOtp = async (otp: string) => {
-    setIsLoading(true);
-    setOtpError('');
+    if (verifyingRef.current || otp.length !== 6) return;
 
     if (!confirmationRef.current) {
-      setIsLoading(false);
-      setOtpError('Session expired. Please resend the OTP.');
+      setOtpError(
+        sendState === 'sending'
+          ? 'Your OTP is still on its way — please try again in a moment.'
+          : 'Session expired. Please resend the OTP.'
+      );
       return;
     }
+
+    verifyingRef.current = true;
+    setIsVerifying(true);
+    setOtpError('');
 
     // Confirm the code with Firebase, then exchange the signed-in user for an
     // ID token our server can verify.
@@ -151,19 +249,29 @@ export default function BasicInfoStep() {
       const credential = await confirmationRef.current.confirm(otp);
       idToken = await credential.user.getIdToken();
     } catch (err) {
-      setIsLoading(false);
+      verifyingRef.current = false;
+      setIsVerifying(false);
       setOtpError(firebaseOtpError(err));
+      // Clear the boxes so the user can retype immediately (the input
+      // refocuses its first box on external clear).
+      setOtpValue('');
       return;
     }
 
     const { error } = await otpService.verifyToken(currentMobile, idToken);
-    if (error) { setIsLoading(false); setOtpError(error); return; }
+    if (error) {
+      verifyingRef.current = false;
+      setIsVerifying(false);
+      setOtpError(error);
+      return;
+    }
 
     // OTP is verified — mark the store and move to the next step immediately.
+    // isVerifying stays true so the UI shows "Verifying…" until navigation,
+    // instead of flashing back to an idle state.
     // We deliberately do NOT block navigation on the draft-row write below: a
     // cold DB connection can take several seconds, and the user shouldn't wait
     // for it just to see the next form.
-    setIsLoading(false);
     trackEvent(EVENTS.OTP_VERIFIED);
     updateData({ mobile: currentMobile, otpVerified: true });
     router.push('/apply/basic-details');
@@ -187,18 +295,20 @@ export default function BasicInfoStep() {
       });
   };
 
-  const handleResendOtp = async () => {
-    if (timer > 0) return;
+  // Auto-verify the moment the 6th digit lands (typed, pasted, or autofilled).
+  // The "Continue to Verify" button remains as a fallback — e.g. after a
+  // failed attempt, or if verification was skipped because the SMS dispatch
+  // hadn't finished when the digits were entered.
+  const handleOtpComplete = (otp: string) => {
+    setOtpValue(otp);
+    if (confirmationRef.current) void handleVerifyOtp(otp);
+  };
+
+  const handleResendOtp = () => {
+    if (timer > 0 || isVerifying || sendState === 'sending') return;
     setOtpError('');
-    try {
-      confirmationRef.current = await sendFirebaseOtp(currentMobile);
-    } catch (err) {
-      setOtpError(firebaseOtpError(err));
-      return;
-    }
-    setTimer(60);
-    trackEvent(EVENTS.OTP_SENT, { resend: true });
-    showToast('OTP resent successfully', 'success');
+    setOtpValue('');
+    void dispatchOtp(currentMobile, { resend: true });
   };
 
   return (
@@ -218,7 +328,7 @@ export default function BasicInfoStep() {
                   type="button"
                   onClick={() => setStep('form')}
                   className={styles.editMobileBtn}
-                  disabled={isLoading}
+                  disabled={isVerifying}
                   aria-label="Change mobile number"
                 >
                   <Pencil size={14} />
@@ -240,6 +350,7 @@ export default function BasicInfoStep() {
               {...register('fullName')}
             />
             {errors.fullName && <p className={styles.errorText}>{errors.fullName.message}</p>}
+            <p className={styles.helperText}>As per PAN Card</p>
           </div>
 
           {/* Mobile Number */}
@@ -260,16 +371,14 @@ export default function BasicInfoStep() {
               />
             </div>
             {errors.mobile && <p className={styles.errorText}>{errors.mobile.message}</p>}
-            {apiError && <p className={styles.errorText} role="alert">{apiError}</p>}
           </div>
 
           <div className={styles.ctaGroup}>
             <button
               type="submit"
-              className={`btn btn--cta btn--lg ${styles.submitBtn} ${isLoading ? 'btn--disabled' : ''}`}
-              disabled={isLoading}
+              className={`btn btn--cta btn--lg ${styles.submitBtn}`}
             >
-              {isLoading ? <><Loader2 size={18} className="spin" /> Sending...</> : 'Check Eligibility'}
+              Check Eligibility
             </button>
 
             <p className={styles.cibilNote}>No impact on your CIBIL score</p>
@@ -288,12 +397,27 @@ export default function BasicInfoStep() {
           <div className={styles.otpWrapper}>
             <OtpInput
               length={6}
-              onComplete={setOtpValue}
+              value={otpValue}
+              onComplete={handleOtpComplete}
               onChange={setOtpValue}
               error={otpError}
-              disabled={isLoading}
+              disabled={isVerifying}
+              autoFocus
             />
           </div>
+
+          {/* Live SMS delivery status — the inputs stay enabled throughout, so
+              the user can start typing the moment the OTP arrives. */}
+          {sendState === 'sending' && (
+            <p className={`${styles.statusLine} ${styles.statusSending}`} role="status">
+              <Loader2 size={14} className="spin" /> Sending OTP…
+            </p>
+          )}
+          {sendState === 'sent' && otpValue === '' && !otpError && !isVerifying && (
+            <p className={`${styles.statusLine} ${styles.statusSent}`} role="status">
+              <CheckCircle2 size={14} /> OTP sent
+            </p>
+          )}
 
           {/* Surface send failures (e.g. auto-send on arrival from the landing
               page) here too — otherwise the OTP screen looks silently broken. */}
@@ -303,7 +427,7 @@ export default function BasicInfoStep() {
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={timer > 0 || isLoading}
+              disabled={timer > 0 || isVerifying || sendState === 'sending'}
               className={`${styles.resendBtn} ${timer > 0 ? styles.disabled : ''}`}
               aria-label="Resend OTP"
             >
@@ -329,20 +453,21 @@ export default function BasicInfoStep() {
               className={styles.checkbox}
               checked={whatsappOptIn}
               onChange={(e) => setWhatsappOptIn(e.target.checked)}
-              disabled={isLoading}
+              disabled={isVerifying}
             />
             <label htmlFor="consentWhatsapp" className={styles.consentText}>
               Send me loan-related updates, alerts, and communications via WhatsApp on my registered mobile number. (Optional)
             </label>
           </div>
 
+          {/* Fallback only: verification fires automatically on the 6th digit. */}
           <button
             type="button"
             onClick={() => handleVerifyOtp(otpValue)}
-            className={`btn btn--cta btn--lg ${styles.submitBtn} ${(isLoading || otpValue.length !== 6) ? 'btn--disabled' : ''}`}
-            disabled={isLoading || otpValue.length !== 6}
+            className={`btn btn--cta btn--lg ${styles.submitBtn} ${(isVerifying || otpValue.length !== 6) ? 'btn--disabled' : ''}`}
+            disabled={isVerifying || otpValue.length !== 6}
           >
-            {isLoading ? <><Loader2 size={18} className="spin" /> Verifying...</> : 'Continue to Verify'}
+            {isVerifying ? <><Loader2 size={18} className="spin" /> Verifying...</> : 'Continue to Verify'}
           </button>
           </div>
         </div>

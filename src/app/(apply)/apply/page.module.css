@@ -68,6 +68,15 @@
   gap: var(--sp-2, 0.5rem);
 }
 
+/* Small hint under the Full Name input — mirrors the landing-page form. */
+.helperText {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6b7280;
+  text-align: left;
+  margin: -2px 0 0; /* flex gap is 8px; pull back to the 6px the design uses */
+}
+
 .label {
   font-size: var(--text-sm, 0.875rem);
   font-weight: 600;
@@ -121,19 +130,30 @@
   /* 16px minimum keeps iOS from zooming the page when the field is focused. */
   font-size: max(16px, var(--text-base, 1rem));
   font-weight: 600;
-  color: var(--gray-900);
-  -webkit-text-fill-color: var(--gray-900);
+  color: #111827;
+  -webkit-text-fill-color: #111827;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   letter-spacing: 1.5px;
   background: var(--white);
 }
 
+/* The input sets -webkit-text-fill-color for autofill, which also paints the
+   placeholder — re-declare it here so placeholders read as hints, not values.
+   letter-spacing reset: the 1.5px digit spacing shouldn't stretch hint text. */
+.input::placeholder {
+  color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 /* Keep autofilled values dark on a white field so they stay visible on mobile. */
 .input:-webkit-autofill {
-  -webkit-text-fill-color: var(--gray-900);
+  -webkit-text-fill-color: #111827;
   -webkit-box-shadow: 0 0 0 1000px var(--white) inset;
-  caret-color: var(--gray-900);
+  caret-color: #111827;
 }
 
 /* Inside the mobileInputWrapper the input has no own border */
@@ -239,6 +259,26 @@
 .editMobileBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── OTP send status (Sending OTP… / OTP sent) ── */
+.statusLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  margin: calc(-1 * var(--sp-3, 0.75rem)) 0 0;
+  text-align: center;
+}
+
+.statusSending {
+  color: var(--gray-500);
+}
+
+.statusSent {
+  color: var(--green-600);
 }
 
 /* ── OTP ── */
