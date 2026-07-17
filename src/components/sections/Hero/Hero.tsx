@@ -135,18 +135,19 @@ export default function Hero() {
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)}>
-              <div style={{ marginBottom: 16 }}>
+              <div>
                 <label className={styles.formLabel}>Full Name</label>
                 <input
                   {...register('fullName')}
                   className={`${styles.formInput} ${isNameValid ? styles.validInput : ''}`}
-                  placeholder="As per PAN card"
+                  placeholder="Enter your full name"
                 />
                 {errors.fullName && (
                   <p style={{ color: '#f87171', fontSize: '0.75rem', marginTop: 4 }}>
                     {errors.fullName.message}
                   </p>
                 )}
+                <p className={styles.helperText}>As per PAN Card</p>
               </div>
 
               <div style={{ marginBottom: 20 }}>
@@ -156,7 +157,7 @@ export default function Hero() {
                   <input
                     {...register('mobile')}
                     className={styles.mobileInput}
-                    placeholder="9876543210"
+                    placeholder="Enter 10-digit mobile number"
                     maxLength={10}
                     inputMode="numeric"
                   />

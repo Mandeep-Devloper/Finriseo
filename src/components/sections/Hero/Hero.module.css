@@ -145,11 +145,12 @@
   background: #ffffff;
   border: 1.5px solid rgba(0, 0, 0, 0.05);
   border-radius: 12px;
-  color: #0d1b0f;
+  color: #111827;
   /* Force the typed value dark even when the browser autofills (otherwise the
      value can render in the browser's autofill color and look invisible). */
-  -webkit-text-fill-color: #0d1b0f;
+  -webkit-text-fill-color: #111827;
   font-size: 1rem;
+  font-weight: 500;
   padding: 0 16px;
   outline: none;
   transition: all 0.25s ease;
@@ -161,13 +162,27 @@
    default yellow/blue tint that can hide the value on mobile. */
 .formInput:-webkit-autofill,
 .mobileInput:-webkit-autofill {
-  -webkit-text-fill-color: #0d1b0f;
+  -webkit-text-fill-color: #111827;
   -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  caret-color: #0d1b0f;
+  caret-color: #111827;
 }
 
+/* The inputs set -webkit-text-fill-color for autofill, which also paints the
+   placeholder — re-declare it here so placeholders stay visibly lighter than
+   typed values. */
 .formInput::placeholder {
   color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+.helperText {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6b7280;
+  text-align: left;
+  margin: 6px 0 12px;
 }
 
 /* Green glow when user is typing */
@@ -232,15 +247,19 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #0d1b0f;
-  -webkit-text-fill-color: #0d1b0f;
+  color: #111827;
+  -webkit-text-fill-color: #111827;
   font-size: 1rem;
+  font-weight: 500;
   padding: 0 16px;
   font-family: var(--font-heading);
 }
 
 .mobileInput::placeholder {
   color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
+  font-size: 0.9375rem;
+  font-weight: 400;
 }
 
 .submitBtn {
