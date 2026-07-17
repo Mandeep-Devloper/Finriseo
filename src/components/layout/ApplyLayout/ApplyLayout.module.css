@@ -243,8 +243,10 @@
   line-height: 1.16;
   margin-bottom: var(--sp-8, 2rem);
   /* The global `h1` rule forces a dark ink color, which is invisible on this
-     dark-green panel. Restore the panel's white text (class beats element). */
-  color: var(--white);
+     dark-green panel. Hard-lock pure white (literal, not a token) so no global
+     style, token change, or fill-color override can ever darken it. */
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
 .highlight {
@@ -252,6 +254,8 @@
   display: inline-block;
   padding: 0 0.12em;
   white-space: nowrap;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
 .circleSvg {

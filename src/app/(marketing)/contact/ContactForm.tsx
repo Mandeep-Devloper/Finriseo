@@ -56,19 +56,19 @@ export default function ContactForm() {
       <div className={styles.row}>
         <div className={styles.field}>
           <label className={styles.label}>Your Name</label>
-          <input {...register('name')} className={`${styles.input} ${errors.name ? styles.inputError : ''}`} placeholder="Rahul Sharma" />
+          <input {...register('name')} className={`${styles.input} ${errors.name ? styles.inputError : ''}`} placeholder="Enter your full name" />
           {errors.name && <p className={styles.error}>{errors.name.message}</p>}
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Mobile Number</label>
-          <input {...register('phone')} className={`${styles.input} ${errors.phone ? styles.inputError : ''}`} placeholder="9876543210" maxLength={10} inputMode="numeric" />
+          <input {...register('phone')} className={`${styles.input} ${errors.phone ? styles.inputError : ''}`} placeholder="Enter 10-digit mobile number" maxLength={10} inputMode="numeric" />
           {errors.phone && <p className={styles.error}>{errors.phone.message}</p>}
         </div>
       </div>
 
       <div className={styles.field}>
         <label className={styles.label}>Email Address</label>
-        <input {...register('email')} type="email" className={`${styles.input} ${errors.email ? styles.inputError : ''}`} placeholder="rahul@example.com" />
+        <input {...register('email')} type="email" className={`${styles.input} ${errors.email ? styles.inputError : ''}`} placeholder="you@example.com" />
         {errors.email && <p className={styles.error}>{errors.email.message}</p>}
       </div>
 

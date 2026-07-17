@@ -34,7 +34,7 @@ export default function Testimonials() {
         </header>
 
         <div className={styles.marqueeWrapper}>
-          <div className={styles.marqueeTrack}>
+          <div className={`${styles.marqueeTrack} marquee-track`}>
             {[...TESTIMONIALS, ...TESTIMONIALS].map((testimonial, i) => (
               <div key={i} className={styles.card}>
                 <div className={styles.stars}>

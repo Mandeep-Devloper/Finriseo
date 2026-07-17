@@ -19,7 +19,7 @@ export default function Partners() {
           <p className="section-subtitle">Verified & RBI-registered institutions</p>
         </header>
         <div className={styles.marqueeWrapper}>
-          <div className={styles.marqueeTrack}>
+          <div className={`${styles.marqueeTrack} marquee-track`}>
             {doubled.map((partner, index) => (
               <div key={index} className={styles.partnerPill}>
                 {partner}
