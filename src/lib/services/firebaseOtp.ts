@@ -35,12 +35,20 @@ let verifier: RecaptchaVerifier | null = null;
 
 function getVerifier(): RecaptchaVerifier {
   if (!verifier) {
-    // Drop any stale widget left in the container — e.g. when Fast Refresh (or
-    // a failed clear()) resets our module state while the DOM keeps the old
-    // iframe. Rendering a new verifier into a non-empty container throws
-    // "reCAPTCHA has already been rendered in this element".
-    document.getElementById(RECAPTCHA_CONTAINER)?.replaceChildren();
-    verifier = new RecaptchaVerifier(getClientAuth(), RECAPTCHA_CONTAINER, {
+    const host = document.getElementById(RECAPTCHA_CONTAINER);
+    if (!host) {
+      throw new Error(`#${RECAPTCHA_CONTAINER} is not mounted`);
+    }
+    // Every verifier gets its OWN child element. grecaptcha refuses to render
+    // twice into the same element, and a discarded verifier's still-queued
+    // render can land AFTER we've cleared the container (e.g. the prewarmed
+    // widget's script finishes loading mid-send) — rendering into a fresh
+    // element sidesteps both. replaceChildren() detaches any stale/late
+    // widget DOM so it can't pile up.
+    host.replaceChildren();
+    const slot = document.createElement('div');
+    host.appendChild(slot);
+    verifier = new RecaptchaVerifier(getClientAuth(), slot, {
       size: 'invisible',
     });
   }
@@ -63,6 +71,27 @@ function resetVerifier(): void {
 }
 
 /**
+ * Warm up the OTP path before the user asks for a send: initializes Firebase
+ * Auth and renders a throwaway invisible reCAPTCHA widget so the reCAPTCHA
+ * script (the slowest part of the first send) is downloaded and cached while
+ * the user is still typing. The send itself does NOT reuse this widget — it
+ * always builds a fresh verifier (see sendFirebaseOtp) — but with the script
+ * already cached that rebuild is near-instant. Safe to call repeatedly,
+ * never throws.
+ */
+export async function prewarmFirebaseOtp(): Promise<void> {
+  if (OTP_DEV_BYPASS || typeof window === 'undefined') return;
+  const prewarmed = getVerifier();
+  try {
+    await prewarmed.render();
+  } catch {
+    // Only tear down if we still own the current verifier — a send may have
+    // already replaced it, and clearing THAT one would break the in-flight send.
+    if (verifier === prewarmed) resetVerifier();
+  }
+}
+
+/**
  * Send an OTP SMS to an Indian mobile (10 digits, no country code).
  * Resolves with the ConfirmationResult used to verify the entered code.
  * On failure the reCAPTCHA verifier is reset so a retry/resend works.
@@ -76,8 +105,9 @@ export async function sendFirebaseOtp(mobile: string): Promise<ConfirmationResul
   }
   try {
     // Always start from a fresh verifier: reCAPTCHA tokens are single-use, so
-    // reusing the widget from a previous send (e.g. on Resend) gets its spent
-    // token rejected with auth/invalid-app-credential.
+    // reusing a widget from a previous send (or the prewarmed one) risks a
+    // spent/stale token being rejected. The prewarm still pays off — the
+    // reCAPTCHA script is already cached, so this fresh render is fast.
     resetVerifier();
     const result = await signInWithPhoneNumber(getClientAuth(), `+91${mobile}`, getVerifier());
     console.info('[firebase-otp] SMS dispatched OK — confirmation session ready.');
@@ -127,7 +157,10 @@ function devBypassConfirmation(mobile: string): ConfirmationResult {
  */
 function logFirebaseDiagnostic(err: unknown): void {
   const code = (err as { code?: string })?.code ?? 'unknown';
-  const message = (err as { message?: string })?.message ?? '';
+  // Some failures are not FirebaseErrors (e.g. the grecaptcha widget can
+  // reject with a bare string or null) — String(err) keeps those visible
+  // instead of logging an empty object.
+  const message = (err as { message?: string })?.message ?? String(err);
   const hints: Record<string, string> = {
     'auth/billing-not-enabled':
       'Project is on the free Spark plan → real SMS is blocked. Upgrade to the BLAZE plan, OR use a configured Firebase TEST phone number for dev.',
@@ -144,7 +177,7 @@ function logFirebaseDiagnostic(err: unknown): void {
   };
   console.error(
     `[firebase-otp] SEND FAILED — code="${code}"`,
-    { message },
+    { message, raw: err },
     '\n→ Firebase-end action:', hints[code] ?? 'No specific console fix mapped; check the code above against Firebase Auth error reference.'
   );
 }
@@ -164,6 +197,8 @@ export function firebaseOtpError(err: unknown): string {
     case 'auth/captcha-check-failed':
     case 'auth/missing-app-credential':
       return 'Verification failed. Please refresh and try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection and try again.';
     case 'auth/billing-not-enabled':
     case 'auth/quota-exceeded':
       // Service-side config/quota problem — not something the user can fix by
