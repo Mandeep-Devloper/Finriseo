@@ -9,6 +9,9 @@ import { reportServerError, serverError } from '@/lib/http/errors';
 import { recordAudit } from '@/lib/services/auditLog';
 import { checkDualRateLimit } from '@/app/api/otp/_otpStore';
 import { applicationStartSchema as schema } from '@/lib/validations';
+import { createTrustedSession } from '@/lib/auth/trustedSession';
+import { computeProgressPct, routeForStep } from '@/lib/application/progress';
+import { TRUSTED_ABSOLUTE_TTL_MS } from '@/lib/auth/constants';
 
 // Build the consent record persisted with a draft when the borrower ticked the
 // mandatory step-1 consent. Empty object when no consent was signalled, so we
@@ -78,23 +81,36 @@ export async function POST(req: NextRequest) {
             ...(existing.whatsappOptIn == null ? whatsapp_ : {}),
           },
         });
+        // Bind a trusted-browser session to this draft so this browser can resume
+        // with no OTP for the next 7 days.
+        await createTrustedSession({ applicationId: existing.id, mobile: session.phone, headers: headersList, ip });
         return NextResponse.json({ success: true, referenceId });
       }
     }
 
     const newReferenceId = generateReferenceId();
-    await db.application.create({
+    const created = await db.application.create({
       data: {
         referenceId: newReferenceId,
         mobile: session.phone,
         fullName,
         status: 'draft',
         currentStep: 'otp_verified',
+        currentRoute: routeForStep('otp_verified'),
+        completedSteps: ['otp_verified'],
+        progressPct: computeProgressPct(['otp_verified']),
+        lastActivityAt: new Date(),
+        // Draft purge horizon for the retention job (matches the trusted-session
+        // absolute cap so a resumable draft always outlives its trusted session).
+        expiresAt: new Date(Date.now() + TRUSTED_ABSOLUTE_TTL_MS),
         source: 'web',
         ...consent_,
         ...whatsapp_,
       },
     });
+
+    // Bind the trusted-browser session to the freshly created draft.
+    await createTrustedSession({ applicationId: created.id, mobile: session.phone, headers: headersList, ip });
 
     void recordAudit({ referenceId: newReferenceId, actorUid: session.uid, action: 'started' });
     return NextResponse.json({ success: true, referenceId: newReferenceId });
