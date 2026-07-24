@@ -38,6 +38,9 @@ jobs:
 
       # Catch schema/migration mistakes (invalid types, relations) before typecheck.
       - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://localhost:5432/finriseo?schema=public
+          DIRECT_URL: postgresql://localhost:5432/finriseo?schema=public
         run: npx prisma validate
 
       - name: Typecheck
