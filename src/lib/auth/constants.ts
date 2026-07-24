@@ -18,3 +18,13 @@ export const ADMIN_SESSION_COOKIE = 'finriseo_admin_session';
 // access to every borrower's PII, so we cap the replay window tighter (30 min)
 // and re-verify against the DB (active + role) on every request anyway.
 export const ADMIN_SESSION_TTL_MS = 30 * 60 * 1000;
+
+// ── Trusted-browser session (Magic Resume) ──────────────────────────
+// A DB-backed, fingerprint-bound session that lets a returning borrower resume a
+// DRAFT with no OTP. Separate from SESSION_COOKIE: it authorizes draft-scoped ops
+// only, never submitted records or admin routes.
+export const TRUSTED_COOKIE = 'finriseo_trust';
+// Sliding window reset on each activity.
+export const TRUSTED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// Hard cap from creation — a session can never live past this regardless of use.
+export const TRUSTED_ABSOLUTE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
