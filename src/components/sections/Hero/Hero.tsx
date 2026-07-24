@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { basicInfoSchema } from '@/lib/validations';
 import { MAX_LOAN_DISPLAY } from '@/lib/constants';
 import { trackEvent, EVENTS } from '@/lib/analytics';
+import { ResumeJourneyCard } from '@/components/sections/ResumeJourney';
 import styles from './Hero.module.css';
 
 const WORDS = [
@@ -26,6 +27,10 @@ type FormData = z.infer<typeof basicInfoSchema>;
 export default function Hero() {
   const [index, setIndex] = useState(0);
   const [show, setShow] = useState(true);
+  // When the trusted browser has an unfinished draft, the Resume card replaces
+  // the quick-start form. Starts false so a first-time visitor sees the form with
+  // no flicker (the card renders nothing until it confirms a draft exists).
+  const [hasDraft, setHasDraft] = useState(false);
 
   useEffect(() => {
     // The rotating headline is pure decoration — freeze it on the first word
@@ -126,8 +131,10 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* RIGHT — FORM */}
+        {/* RIGHT — RESUME CARD (returning draft) or quick-start FORM */}
         <div className={styles.heroRight}>
+          <ResumeJourneyCard onHasDraft={setHasDraft} />
+          {!hasDraft && (
           <div className={styles.formCard}>
             <h2 className={styles.formCardTitle}>Get Personalized<br></br>Loan Offers</h2>
             <p className={styles.formCardSubtitle}>
@@ -180,6 +187,7 @@ export default function Hero() {
               This will not affect your CIBIL score.
             </p>
           </div>
+          )}
         </div>
       </div>
     </section>
