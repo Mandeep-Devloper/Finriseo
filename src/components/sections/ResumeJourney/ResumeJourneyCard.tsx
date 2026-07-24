@@ -56,8 +56,20 @@ export function ResumeJourneyCard({ onHasDraft }: { onHasDraft?: (has: boolean) 
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <div className={styles.headerRow}>
-        <span className={styles.badge}><Rocket size={16} /> Continue Your Loan Journey</span>
+        <span className={styles.badge}>
+          <Rocket size={16} className={styles.badgeIcon} /> Continue Your Loan Journey
+        </span>
         <span className={styles.lastActivity}>{relativeTime(summary.lastActivityAt)}</span>
+      </div>
+
+      <div className={styles.figureRow}>
+        <span className={styles.figure}>
+          <span className={styles.pct}>{pct}%</span>
+          <span className={styles.pctLabel}>completed</span>
+        </span>
+        {summary.estRemainingMin ? (
+          <span className={styles.eta}><Clock size={13} /> ~{summary.estRemainingMin} min left</span>
+        ) : null}
       </div>
 
       <div
@@ -76,17 +88,10 @@ export function ResumeJourneyCard({ onHasDraft }: { onHasDraft?: (has: boolean) 
         />
       </div>
 
-      <div className={styles.metaRow}>
-        <span className={styles.pct}>{pct}% Completed</span>
-        {summary.estRemainingMin ? (
-          <span className={styles.eta}><Clock size={14} /> ~{summary.estRemainingMin} min left</span>
-        ) : null}
-      </div>
-
       <p className={styles.message}>{motivationalMessage(pct)}</p>
 
-      <Link href={summary.currentRoute ?? '/apply/basic-details'} className={`btn btn--cta btn--lg ${styles.cta}`}>
-        Continue Application <ArrowRight size={18} />
+      <Link href={summary.currentRoute ?? '/apply/basic-details'} className={styles.cta}>
+        Continue Application <ArrowRight size={18} className={styles.ctaArrow} />
       </Link>
     </motion.div>
   );

@@ -1,85 +1,171 @@
-/* A light card that pops on the dark hero, using the app's own design tokens
-   (gold/green accents, ink text, shared radii). Same design language as the
-   quick-start form card it replaces. */
+/* Deliberately mirrors Hero's .formCard treatment (glassy white, layered soft
+   shadows + inset highlights) so the resume card reads as the SAME surface the
+   quick-start form lives on — it replaces that card, it shouldn't look foreign.
+   Signature: the forest→gold progress fill (Finriseo's two brand colors) is the
+   one bold element; everything else stays quiet. */
 .card {
-  background: var(--color-bg, #fff);
-  border: 1px solid var(--color-border-light, #eceff1);
-  border-radius: var(--radius-2xl, 1.5rem);
-  padding: 28px;
-  box-shadow: 0 24px 60px rgba(4, 13, 6, 0.28);
+  background: white;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.08),
+    inset 0 2px 6px rgba(255, 255, 255, 0.8),
+    inset 0 -4px 12px rgba(255, 255, 255, 0.3);
   width: 100%;
   max-width: 440px;
 }
 
+/* ── Header ── */
 .headerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
-  font-size: var(--text-sm, 0.875rem);
-  color: var(--green-600, #1A5C32);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: #0a2e1a;
+}
+
+.badgeIcon {
+  color: var(--green-500, #22703D);
+  flex-shrink: 0;
 }
 
 .lastActivity {
-  font-size: var(--text-xs, 0.75rem);
-  color: var(--color-text-muted, #9aa0a6);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9aa0a6;
   white-space: nowrap;
 }
 
-.progressTrack {
-  height: 12px;
-  border-radius: var(--radius-full, 9999px);
-  background: var(--gold-50, #FDFAF2);
-  border: 1px solid var(--color-border-light, #eceff1);
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: var(--radius-full, 9999px);
-  background: linear-gradient(90deg, var(--green-500, #22703D), var(--gold-500, #C9A84C));
-}
-
-.metaRow {
+/* ── The number is the focal point ── */
+.figureRow {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  margin-top: 14px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .pct {
+  font-family: var(--font-heading);
   font-weight: 800;
-  font-size: var(--text-lg, 1.125rem);
-  color: var(--color-text, #1a1a1a);
+  font-size: 2.5rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #0d1b0f;
+}
+
+.pctLabel {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 
 .eta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--text-sm, 0.875rem);
-  color: var(--color-text-muted, #9aa0a6);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green-600, #1A5C32);
+  background: var(--green-50, #F0FAF3);
+  border: 1px solid var(--green-100, #C8F0D4);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
+/* ── Progress bar — the signature ── */
+.progressTrack {
+  height: 10px;
+  border-radius: 999px;
+  background: #eef1f0;
+  box-shadow: inset 0 1px 3px rgba(10, 46, 26, 0.12);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green-600, #1A5C32) 0%, var(--green-400, #2E8B4F) 45%, var(--gold-500, #C9A84C) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 0 10px rgba(201, 168, 76, 0.35);
+}
+
+/* ── Message ── */
 .message {
-  margin: 16px 0 22px;
-  font-size: var(--text-sm, 0.875rem);
-  color: var(--color-text-secondary, #5f6368);
+  margin: 18px 0 24px;
+  font-size: 0.875rem;
   line-height: 1.55;
+  color: #4b5563;
 }
 
+/* ── CTA — matches Hero's .submitBtn (dark forest, 8px, shine on hover) ── */
 .cta {
   width: 100%;
+  height: 52px;
+  background: #0a2e1a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-decoration: none;
+  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cta:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.30);
+}
+
+.cta:active {
+  transform: translateY(0);
+}
+
+.ctaArrow {
+  transition: transform 0.25s ease;
+}
+
+.cta:hover .ctaArrow {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta,
+  .cta:hover,
+  .ctaArrow,
+  .cta:hover .ctaArrow {
+    transition: none;
+    transform: none;
+  }
 }
