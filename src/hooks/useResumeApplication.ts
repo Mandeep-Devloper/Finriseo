@@ -16,13 +16,18 @@ interface DraftResponse {
  * Restore an in-progress draft into the funnel store from the server (trusted or
  * Firebase session). Used by /apply and by the post-OTP restore path. Runs once.
  */
-export function useResumeApplication(opts: { autoRoute?: boolean } = {}) {
+export function useResumeApplication(opts: { autoRoute?: boolean; enabled?: boolean } = {}) {
+  const enabled = opts.enabled ?? true;
   const router = useRouter();
   const hydrate = useApplicationStore((s) => s.hydrateFromServer);
   const [status, setStatus] = useState<'idle' | 'loading' | 'restored' | 'none'>('idle');
   const ran = useRef(false);
 
   useEffect(() => {
+    // When the in-memory store is already populated (normal in-session forward
+    // navigation), skip the network round-trip entirely — no flash, no wasted
+    // request. Only fetch to restore when there's nothing in the store.
+    if (!enabled) return;
     if (ran.current) return;
     ran.current = true;
     setStatus('loading');

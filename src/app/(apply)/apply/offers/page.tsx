@@ -7,6 +7,7 @@ import { useApplicationStore } from '@/store/applicationStore';
 import { formatINR } from '@/lib/financial';
 import { trackEvent, EVENTS } from '@/lib/analytics';
 import { applicationService } from '@/lib/services';
+import { useResumeApplication } from '@/hooks/useResumeApplication';
 import { FindingOffers } from '@/components/sections/FindingOffers/FindingOffers';
 import type { LoanOffer } from '@/types/application';
 import styles from './page.module.css';
@@ -34,6 +35,15 @@ export default function OffersStep() {
   const hasLoaded = useRef(false);
 
   const { mobile, loanAmount, employmentType, monthlyIncome, selectedOffer } = applicationData;
+
+  // Magic Resume: when the store is empty (fresh browser resuming via the trusted
+  // cookie), restore the draft from the server before the guards below decide to
+  // redirect. Ready = the figures the offers match needs are all present.
+  const storeReady = Boolean(
+    applicationData.otpVerified && Number(loanAmount) && Number(monthlyIncome) && employmentType
+  );
+  const { status: resumeStatus } = useResumeApplication({ enabled: !storeReady });
+  const resumeSettling = !storeReady && (resumeStatus === 'idle' || resumeStatus === 'loading');
 
   // Runs the real offers match. The interstitial owns the animation timing; row 4
   // ("Comparing loan offers") only checks off once this actually resolves.
@@ -69,6 +79,9 @@ export default function OffersStep() {
 
   useEffect(() => {
     setMounted(true);
+    // Wait for a resume attempt to settle before deciding to redirect, so a
+    // fresh-browser resume isn't bounced while the draft is still loading.
+    if (resumeSettling) return;
     // Security route guard
     if (!applicationData.otpVerified) {
       router.replace('/apply');
@@ -87,11 +100,11 @@ export default function OffersStep() {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
     load();
-  }, [applicationData.otpVerified, loanAmount, monthlyIncome, employmentType, router, load]);
+  }, [resumeSettling, applicationData.otpVerified, loanAmount, monthlyIncome, employmentType, router, load]);
 
-  // Prevent flash before hydration / auth+data redirects
+  // Prevent flash before hydration / resume / auth+data redirects
+  if (!mounted || resumeSettling) return null;
   if (
-    !mounted ||
     !applicationData.otpVerified ||
     !Number(loanAmount) ||
     !Number(monthlyIncome) ||

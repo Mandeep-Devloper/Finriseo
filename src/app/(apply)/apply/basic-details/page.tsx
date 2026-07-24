@@ -6,7 +6,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step2Schema, Step2FormData } from '@/lib/validations';
-import { applicationService } from '@/lib/services';
+import { useAutosave } from '@/hooks/useAutosave';
+import { useResumeApplication } from '@/hooks/useResumeApplication';
 import { PincodeInput } from '@/components/ui/PincodeInput/PincodeInput';
 import type { PincodeLookupState } from '@/hooks/usePincodeLookup';
 import styles from './page.module.css';
@@ -17,13 +18,19 @@ export default function BasicDetailsStep() {
   const applicationData = useApplicationStore((state) => state);
   const [mounted, setMounted] = useState(false);
 
-  // Secure Route Guard
+  const { saveStep, saveField } = useAutosave(applicationData.referenceId || undefined);
+
+  // Secure Route Guard — with Magic Resume support: when the in-memory store is
+  // empty (fresh browser resuming via the trusted cookie), try to restore the
+  // draft from the server first, and only bounce to /apply if there's nothing.
+  const storeReady = Boolean(applicationData.mobile && applicationData.otpVerified);
+  const { status: resumeStatus } = useResumeApplication({ enabled: !storeReady });
   useEffect(() => {
     setMounted(true);
-    if (!applicationData.mobile || !applicationData.otpVerified) {
+    if (!storeReady && resumeStatus === 'none') {
       router.replace('/apply');
     }
-  }, [applicationData.mobile, applicationData.otpVerified, router]);
+  }, [storeReady, resumeStatus, router]);
 
   // Async PIN verification lives outside RHF (the schema only checks format);
   // this holds the India Post result so we can show the location and block
@@ -70,23 +77,21 @@ export default function BasicDetailsStep() {
     // Persist the draft in the background so the step change is instant — we
     // don't block navigation on the network round-trip. The final submit on the
     // success page resends the full dataset, so a slow/failed draft-save here
-    // never loses data.
-    if (applicationData.referenceId) {
-      void applicationService
-        .updateApplication(applicationData.referenceId, {
-          loanAmount: data.loanAmount,
-          email: data.email,
-          pinCode: data.pinCode,
-          currentStep: 'basic_details',
-        })
-        .catch(() => {});
-    }
+    // never loses data. saveStep also records resume metadata (route, %, snapshot).
+    saveStep('basic_details', {
+      loanAmount: data.loanAmount,
+      email: data.email,
+      pinCode: data.pinCode,
+      district: pinResult.location?.district ?? '',
+      state: pinResult.location?.state ?? '',
+      city: pinResult.location?.city ?? '',
+    });
     router.push('/apply/employment');
   };
 
-  if (!mounted || !applicationData.mobile || !applicationData.otpVerified) {
-    return null;
-  }
+  if (!mounted) return null;
+  if (!storeReady && resumeStatus === 'loading') return null;
+  if (!storeReady && resumeStatus === 'none') return null;
 
   return (
     <div className={styles.container}>
@@ -127,6 +132,7 @@ export default function BasicDetailsStep() {
               aria-invalid={errors.loanAmount ? true : undefined}
               aria-describedby={errors.loanAmount ? 'loanAmount-error' : undefined}
               {...register('loanAmount')}
+              onBlurCapture={(e) => saveField('loanAmount', (e.target as HTMLInputElement).value)}
             />
             {errors.loanAmount && (
               <p id="loanAmount-error" role="alert" className={styles.errorText}>{errors.loanAmount.message}</p>
@@ -146,6 +152,7 @@ export default function BasicDetailsStep() {
               aria-invalid={errors.email ? true : undefined}
               aria-describedby={errors.email ? 'email-error' : undefined}
               {...register('email')}
+              onBlurCapture={(e) => saveField('email', (e.target as HTMLInputElement).value)}
             />
             {errors.email && (
               <p id="email-error" role="alert" className={styles.errorText}>{errors.email.message}</p>
