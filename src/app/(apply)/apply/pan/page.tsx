@@ -7,7 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step4Schema, Step4FormData } from '@/lib/validations';
-import { applicationService } from '@/lib/services';
+import { useAutosave } from '@/hooks/useAutosave';
+import { useResumeApplication } from '@/hooks/useResumeApplication';
 import styles from './page.module.css';
 
 export default function PanStep() {
@@ -16,13 +17,18 @@ export default function PanStep() {
   const applicationData = useApplicationStore((state) => state);
   const [mounted, setMounted] = useState(false);
 
-  // Secure Route Guard
+  const { saveStep } = useAutosave(applicationData.referenceId || undefined);
+
+  // Secure Route Guard — with Magic Resume: restore from the server when the
+  // in-memory store is empty (fresh browser resuming via the trusted cookie).
+  const storeReady = Boolean(applicationData.mobile && applicationData.otpVerified);
+  const { status: resumeStatus } = useResumeApplication({ enabled: !storeReady });
   useEffect(() => {
     setMounted(true);
-    if (!applicationData.mobile || !applicationData.otpVerified) {
+    if (!storeReady && resumeStatus === 'none') {
       router.replace('/apply');
     }
-  }, [applicationData, router]);
+  }, [storeReady, resumeStatus, router]);
 
   const {
     register,
@@ -38,25 +44,18 @@ export default function PanStep() {
   const onSubmit: SubmitHandler<Step4FormData> = async (data) => {
     const panNumber = data.panNumber.toUpperCase();
     updateData({ panNumber });
-    // Persist the draft in the background so the step change is instant — we
-    // don't block navigation on the network round-trip. The final submit on the
-    // success page resends the full dataset, so a slow/failed draft-save here
-    // never loses data.
-    if (applicationData.referenceId) {
-      void applicationService
-        .updateApplication(applicationData.referenceId, {
-          panNumber,
-          currentStep: 'pan_verified',
-        })
-        .catch(() => {});
-    }
+    // Persist in the background so the step change is instant. saveStep records
+    // resume metadata and the PATCH route encrypts PAN into its own column, while
+    // stripping it from the resumable draftData snapshot — so PAN is never stored
+    // in a form that could be restored client-side.
+    saveStep('pan_verified', { panNumber });
     router.push('/apply/offers');
   };
 
   // Prevent hydration flash
-  if (!mounted || !applicationData.mobile || !applicationData.otpVerified) {
-    return null;
-  }
+  if (!mounted) return null;
+  if (!storeReady && resumeStatus === 'loading') return null;
+  if (!storeReady && resumeStatus === 'none') return null;
 
   return (
     <div className={styles.container}>
