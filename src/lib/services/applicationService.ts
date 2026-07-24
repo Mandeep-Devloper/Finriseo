@@ -30,7 +30,16 @@ export const applicationService = {
 
   // Saves whatever fields a given funnel step collected, against the draft
   // created by startApplication.
-  updateApplication: (referenceId: string, data: Partial<ApplicationData> & { currentStep?: string }) =>
+  updateApplication: (
+    referenceId: string,
+    data: Partial<ApplicationData> & {
+      currentStep?: string;
+      currentRoute?: string;
+      progressPct?: number;
+      completedSteps?: string[];
+      draftData?: Record<string, unknown>;
+    }
+  ) =>
     apiClient.patch<{ success: boolean }>(
       `/api/application/${referenceId}`, data
     ),
