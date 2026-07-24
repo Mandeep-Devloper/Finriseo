@@ -1,0 +1,1 @@
+export { ResumeJourneyCard } from './ResumeJourneyCard';
