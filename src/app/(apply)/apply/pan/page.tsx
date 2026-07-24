@@ -38,11 +38,17 @@ export default function PanStep() {
   const onSubmit: SubmitHandler<Step4FormData> = async (data) => {
     const panNumber = data.panNumber.toUpperCase();
     updateData({ panNumber });
+    // Persist the draft in the background so the step change is instant — we
+    // don't block navigation on the network round-trip. The final submit on the
+    // success page resends the full dataset, so a slow/failed draft-save here
+    // never loses data.
     if (applicationData.referenceId) {
-      await applicationService.updateApplication(applicationData.referenceId, {
-        panNumber,
-        currentStep: 'pan_verified',
-      });
+      void applicationService
+        .updateApplication(applicationData.referenceId, {
+          panNumber,
+          currentStep: 'pan_verified',
+        })
+        .catch(() => {});
     }
     router.push('/apply/offers');
   };
@@ -114,14 +120,6 @@ export default function PanStep() {
         </div>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={() => router.push('/apply/employment')}
-            className={`btn btn--ghost ${styles.backBtn}`}
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
           <button
             type="submit"
             className="btn btn--cta"

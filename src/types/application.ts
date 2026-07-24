@@ -7,6 +7,11 @@ export interface ApplicationData {
   loanAmount: number | string;
   email: string;
   pinCode: string;
+  // Auto-detected from the PIN code (India Post). Optional — populated only once
+  // a valid PIN resolves; derivable from pinCode at any time.
+  city?: string;
+  district?: string;
+  state?: string;
   // Step 3: Employment
   employmentType: string;
   monthlyIncome: number | string;

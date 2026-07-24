@@ -1,0 +1,25 @@
+.status {
+  min-height: 1rem;
+}
+
+.status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  margin-top: var(--sp-1, 0.25rem);
+  line-height: 1.4;
+}
+
+.verifying {
+  color: var(--gray-500, #6b7280);
+}
+
+.success {
+  color: var(--forest-600, #1a5c32);
+}
+
+.error {
+  color: var(--color-danger, #dc2626);
+}

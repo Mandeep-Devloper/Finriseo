@@ -227,11 +227,19 @@
 
 .actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
   gap: var(--sp-4, 1rem);
   margin-top: auto; /* pin to the bottom of the screen/card */
   margin-bottom: var(--sp-6, 1.5rem);
+}
+
+/* Single, full-width CTA at a comfortable height — matches the polished
+   buttons on the earlier steps instead of the cramped edge-pinned button. */
+.actions :global(.btn) {
+  flex: 1 1 0;
+  height: 52px;
+  font-size: var(--text-base, 1rem);
+  border-radius: var(--radius-lg, 0.75rem);
 }
 
 .tooltipWrapper {

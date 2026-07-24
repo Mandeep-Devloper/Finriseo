@@ -229,3 +229,31 @@ model Lender {
 
   @@index([active])
 }
+
+// Self-hosted India Post PIN-code directory (~155k rows, one per post office).
+// Populated once from the official "All India Pincode Directory" via
+// `scripts/import-pincodes.mjs`; queried by the /api/pincode route so PIN→location
+// lookups need no runtime call to India Post for the ~19k known PINs. A PIN absent
+// here falls back to the live India Post API (see src/lib/services/pincodeLookup.ts).
+//
+// A PIN maps to MANY offices that all share the same district/state, so lookups
+// read any matching row. The (pincode, officeName) unique key makes the bulk
+// import idempotent (re-runnable) via createMany({ skipDuplicates: true }).
+model Pincode {
+  id             Int      @id @default(autoincrement())
+  pincode        String   @db.VarChar(6)
+  officeName     String
+  district       String
+  state          String
+  circle         String?
+  region         String?
+  division       String?
+  taluk          String?
+  officeType     String? // B.O (Branch), S.O (Sub), H.O (Head)
+  deliveryStatus String? // Delivery | Non-Delivery
+  createdAt      DateTime @default(now())
+
+  @@unique([pincode, officeName])
+  @@index([pincode])
+  @@map("pincodes")
+}
