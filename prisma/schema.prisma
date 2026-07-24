@@ -71,17 +71,55 @@ model Application {
   // Nullable: rows created before this column (or where no signal was sent)
   // are "unknown", not "no".
   whatsappOptIn    Boolean?
+  // ── Magic Resume (draft resume state; single-row read) ──
+  currentRoute   String?            // exact route to restore, e.g. "/apply/employment"
+  progressPct    Int      @default(0)
+  completedSteps String[] @default([])
+  // JSONB snapshot of NON-SENSITIVE funnel fields for full restore. PAN is
+  // NEVER written here (enforced in three layers: PATCH route, draft API, autosave).
+  draftData      Json?
+  lastActivityAt DateTime @default(now())
+  // Stale-draft purge horizon for the retention job; nullable for old rows.
+  expiresAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  assignedTo   AdminUser? @relation("AssignedApplications", fields: [assignedToId], references: [id])
-  chosenLender Lender?    @relation(fields: [chosenLenderId], references: [id])
-  notes        Note[]
+  assignedTo      AdminUser? @relation("AssignedApplications", fields: [assignedToId], references: [id])
+  chosenLender    Lender?    @relation(fields: [chosenLenderId], references: [id])
+  notes           Note[]
+  trustedSessions TrustedSession[]
 
   @@index([mobile])
   @@index([status])
   @@index([createdAt])
   @@index([assignedToId])
+  @@index([lastActivityAt])
+}
+
+// Trusted-browser session for Magic Resume. DB-backed so it is revocable and
+// server-visible. The raw 32-byte token lives ONLY in the httpOnly finriseo_trust
+// cookie; here we store only its SHA-256 hash (a DB leak can't be replayed).
+// Authorizes DRAFT-scoped operations for one browser for 7 days (sliding, capped
+// at 30 days). NEVER authorizes submitted records or admin routes.
+model TrustedSession {
+  id             String    @id @default(cuid())
+  tokenHash      String    @unique
+  applicationId  String
+  mobile         String
+  fingerprint    String    // soft device bind: hash(UA + Accept-Language)
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+  lastUsedAt     DateTime  @default(now())
+  expiresAt      DateTime  // sliding: now + 7d, capped at absoluteExpiry
+  absoluteExpiry DateTime  // hard cap: createdAt + 30d
+  revokedAt      DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([mobile])
+  @@index([expiresAt])
+  @@index([applicationId])
 }
 
 // Internal admin notes on an application. Author is an AdminUser; the body may
