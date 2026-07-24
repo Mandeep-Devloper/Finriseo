@@ -59,6 +59,7 @@ function getRestoredState(): Partial<ApplicationData> {
 
 interface ApplicationStore extends ApplicationData {
   updateData: (updates: Partial<ApplicationData>) => void;
+  hydrateFromServer: (fields: Partial<ApplicationData>) => void;
   resetData: () => void;
 }
 
@@ -81,6 +82,22 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
         );
       } catch { /* ignore */ }
       return newState;
+    }),
+
+  hydrateFromServer: (fields) =>
+    set((state) => {
+      // Server draft is authoritative on resume. otpVerified is implied by the
+      // authorized session that returned this data. PAN is never present here.
+      const merged = { ...state, ...fields, otpVerified: true };
+      try {
+        const safeData = Object.fromEntries(
+          Object.entries(merged).filter(([k]) =>
+            SESSION_SAFE_FIELDS.includes(k as keyof ApplicationData)
+          )
+        );
+        sessionStorage.setItem('finriseo_progress', JSON.stringify(safeData));
+      } catch { /* ignore */ }
+      return merged;
     }),
 
   resetData: () => {
