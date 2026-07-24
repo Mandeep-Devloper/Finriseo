@@ -4,5 +4,8 @@
   "buildCommand": "prisma generate && prisma migrate deploy && next build",
   "env": {
     "NEXT_PUBLIC_APP_ENV": "production"
-  }
+  },
+  "crons": [
+    { "path": "/api/cron/retention", "schedule": "0 3 * * *" }
+  ]
 }
