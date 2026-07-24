@@ -21,7 +21,7 @@ import { db } from '@/lib/db';
 import { getTrustedSession } from './trustedSession';
 import { requireDraftAccess, SessionError } from './session';
 
-const H = { get: (_k: string) => null };
+const H = { get: () => null };
 
 beforeEach(() => {
   cookieStore.clear();
