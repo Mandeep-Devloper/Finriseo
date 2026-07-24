@@ -8,6 +8,9 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebase-admin';
+import { db } from '@/lib/db';
+import { getTrustedSession } from './trustedSession';
+import type { HeaderGetter } from '@/lib/http/ip';
 import { SESSION_COOKIE, SESSION_TTL_MS } from '@/lib/auth/constants';
 
 export { SESSION_COOKIE, SESSION_TTL_MS };
@@ -73,4 +76,45 @@ export async function requireSession(): Promise<SessionUser> {
 /** Standard 401 response for unauthenticated API requests. */
 export function unauthorized() {
   return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+}
+
+export interface DraftAccess {
+  /** Verified owner mobile (10-digit). */
+  mobile: string;
+  /** Firebase uid when authorized via the Firebase session. */
+  uid?: string;
+  via: 'firebase' | 'trusted';
+}
+
+/**
+ * Authorize a DRAFT-scoped operation on the application identified by
+ * `referenceId`. Accepts EITHER a valid Firebase session whose phone owns the
+ * row, OR a valid trusted-browser session whose applicationId maps to the row and
+ * whose mobile matches. Only rows with status='draft' are eligible — this is the
+ * hard boundary that keeps the 7-day trusted cookie away from submitted records.
+ * Throws SessionError otherwise.
+ */
+export async function requireDraftAccess(
+  headers: HeaderGetter,
+  referenceId: string
+): Promise<DraftAccess> {
+  const row = await db.application.findUnique({
+    where: { referenceId },
+    select: { id: true, mobile: true, status: true },
+  });
+  if (!row || row.status !== 'draft') throw new SessionError();
+
+  // Path 1: Firebase session (strong, 1h).
+  const fb = await getSession();
+  if (fb && fb.phone === row.mobile) {
+    return { mobile: row.mobile, uid: fb.uid, via: 'firebase' };
+  }
+
+  // Path 2: trusted-browser session (7d, draft-scoped).
+  const trusted = await getTrustedSession(headers);
+  if (trusted && trusted.mobile === row.mobile && trusted.applicationId === row.id) {
+    return { mobile: row.mobile, via: 'trusted' };
+  }
+
+  throw new SessionError();
 }
