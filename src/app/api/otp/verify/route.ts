@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getAdminAuth } from '@/lib/firebase-admin';
+import { db } from '@/lib/db';
+import { getClientIp } from '@/lib/http/ip';
 import { createSessionCookie, sessionCookieOptions, SESSION_COOKIE } from '@/lib/auth/session';
+import { createTrustedSession } from '@/lib/auth/trustedSession';
 import { reportServerError, serverError } from '@/lib/http/errors';
 import { otpVerifySchema as schema } from '@/lib/validations';
 import { logOtp, maskPhone, checkPhoneRateLimit } from '../_otpStore';
@@ -94,10 +98,37 @@ export async function POST(req: NextRequest) {
     // (the verification itself is already done). logOtp swallows its own errors.
     void logOtp(mobile, 'verified');
 
+    // Magic Resume: if this verified mobile has an unfinished draft, bind a fresh
+    // trusted session to the MOST RECENTLY ACTIVE one and tell the client where to
+    // resume. This is what powers new-device / post-expiry restore. Best-effort:
+    // a failure here must never fail verification.
+    let resume: { referenceId: string; currentRoute: string } | null = null;
+    try {
+      const draft = await db.application.findFirst({
+        where: { mobile, status: 'draft' },
+        orderBy: { lastActivityAt: 'desc' },
+        select: { id: true, referenceId: true, currentRoute: true },
+      });
+      if (draft) {
+        const headersList = await headers();
+        await createTrustedSession({
+          applicationId: draft.id,
+          mobile,
+          headers: headersList,
+          ip: getClientIp(headersList),
+        });
+        resume = { referenceId: draft.referenceId, currentRoute: draft.currentRoute ?? '/apply/basic-details' };
+      }
+    } catch (err) {
+      console.error('[otp-verify] resume lookup failed', { code: (err as { code?: string })?.code });
+    }
+
     // Establish the server session: mint a Firebase session cookie from the
     // (fresh) ID token and set it httpOnly so the client never holds the raw
     // token. This cookie is the real auth gate honored by /api/application/*.
-    const res = NextResponse.json({ success: true, verified: true });
+    // The trusted-session cookie (set above via next/headers) attaches to this
+    // same outgoing response.
+    const res = NextResponse.json({ success: true, verified: true, ...(resume ? { resume } : {}) });
     try {
       const sessionCookie = await createSessionCookie(idToken);
       res.cookies.set(SESSION_COOKIE, sessionCookie, sessionCookieOptions());
