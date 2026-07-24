@@ -52,10 +52,12 @@ jobs:
       - name: Production build
         run: npx next build
 
-      # Report-only: surfaces known advisories in the run log without failing the
-      # build (the current advisories are transitive dev-time deps of firebase-admin
-      # and are tracked separately). Tighten to `--audit-level=high` and drop
-      # continue-on-error once the tree is clean.
-      - name: Dependency audit (report only)
-        continue-on-error: true
-        run: npm audit --omit=dev
+      # Fail the build on any HIGH/critical PRODUCTION advisory. The tree is clean
+      # of highs (Next.js patched to 15.5.21; postcss/sharp/fast-uri/fast-xml-parser
+      # pinned to fixed versions via package.json "overrides"). The only remaining
+      # advisories are MODERATE and live solely in firebase-admin's
+      # @google-cloud/storage & @google-cloud/firestore chains, which this app never
+      # invokes (auth-only usage) — npm's only "fix" for them is a breaking
+      # firebase-admin downgrade, so they are accepted rather than failed on.
+      - name: Dependency audit (fail on high)
+        run: npm audit --omit=dev --audit-level=high
