@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { PIPELINE_STATUSES } from '@/lib/admin/pipeline';
+import { PINCODE_REGEX } from '@/lib/pincode';
+
+// Single source of truth for the PIN-code rule, shared with the client field and
+// the India Post lookup. Rejects leading-zero PINs (e.g. 000000).
+const pinCode = z.string().regex(PINCODE_REGEX, 'Enter a valid 6-digit PIN code');
 
 // Step 1: Full Name + Mobile
 export const step1Schema = z.object({
@@ -20,7 +25,7 @@ export const step2Schema = z.object({
     .min(1000, 'Minimum loan amount is ₹1,000')
     .max(10000000, 'Maximum loan amount is ₹1,00,00,000'),
   email: z.string().email('Enter a valid email address'),
-  pinCode: z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit PIN code'),
+  pinCode,
 });
 
 // Step 3: Employment Details
@@ -74,7 +79,7 @@ export const applicationSubmitSchema = z.object({
   mobile,
   fullName: z.string().trim().min(2).max(120),
   email: z.string().email().max(160).optional(),
-  pinCode: z.string().regex(/^\d{6}$/).optional(),
+  pinCode: pinCode.optional(),
   employmentType: z.string().min(1).max(50),
   monthlyIncome: z.coerce.number().positive(),
   salaryMode: z.string().max(50).optional(),
@@ -90,7 +95,7 @@ export const applicationSubmitSchema = z.object({
 export const applicationPatchSchema = z.object({
   loanAmount: z.coerce.number().positive().optional(),
   email: z.string().email().max(160).optional(),
-  pinCode: z.string().regex(/^\d{6}$/).optional(),
+  pinCode: pinCode.optional(),
   employmentType: z.string().min(1).max(50).optional(),
   monthlyIncome: z.coerce.number().positive().optional(),
   salaryMode: z.string().min(1).max(50).optional(),

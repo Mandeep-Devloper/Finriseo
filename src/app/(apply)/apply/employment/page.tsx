@@ -50,13 +50,19 @@ export default function EmploymentStep() {
       employmentType: data.employmentType,
       salaryMode: data.salaryMode,
     });
+    // Persist the draft in the background so the step change is instant — we
+    // don't block navigation on the network round-trip. The final submit on the
+    // success page resends the full dataset, so a slow/failed draft-save here
+    // never loses data.
     if (applicationData.referenceId) {
-      await applicationService.updateApplication(applicationData.referenceId, {
-        monthlyIncome: data.monthlyIncome,
-        employmentType: data.employmentType,
-        salaryMode: data.salaryMode,
-        currentStep: 'employment',
-      });
+      void applicationService
+        .updateApplication(applicationData.referenceId, {
+          monthlyIncome: data.monthlyIncome,
+          employmentType: data.employmentType,
+          salaryMode: data.salaryMode,
+          currentStep: 'employment',
+        })
+        .catch(() => {});
     }
     trackEvent(EVENTS.EMPLOYMENT_SUBMITTED, { employmentType: data.employmentType });
     router.push("/apply/pan");
@@ -186,14 +192,6 @@ export default function EmploymentStep() {
         </div>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={() => router.push("/apply/basic-details")}
-            className={`btn btn--ghost ${styles.backBtn}`}
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
           <button
             type="submit"
             className="btn btn--cta"

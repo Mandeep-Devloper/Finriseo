@@ -141,23 +141,27 @@
   min-height: min(420px, 52vh);
 }
 
+/* The stage is a fixed-aspect box that all three image layers stack inside,
+   so the cross-fade has no layout shift regardless of each image's ratio. */
 .visualStage {
+  position: relative;
   width: 100%;
   max-width: min(580px, 46vw);
+  aspect-ratio: 4 / 3;
+}
+
+.visualLayer {
+  position: absolute;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   will-change: transform, opacity;
 }
 
-.visualStageLegacy {
-  max-width: min(520px, 44vw);
-}
-
 .stepImage {
   width: 100%;
-  height: auto;
-  max-height: min(68vh, 640px);
+  height: 100%;
   object-fit: contain;
   display: block;
   user-select: none;
@@ -169,12 +173,7 @@
     min-height: auto;
   }
 
-  .visualStage,
-  .visualStageLegacy {
+  .visualStage {
     max-width: 100%;
-  }
-
-  .stepImage {
-    max-height: min(52vh, 420px);
   }
 }

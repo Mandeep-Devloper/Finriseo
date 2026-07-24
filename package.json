@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
     "db:seed": "node prisma/seed.mjs",
+    "db:import-pincodes": "node --env-file=.env scripts/import-pincodes.mjs",
     "admin:create": "node --env-file=.env scripts/admin-create.mjs"
   },
   "prisma": {

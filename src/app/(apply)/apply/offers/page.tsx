@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { formatINR } from '@/lib/financial';
 import { trackEvent, EVENTS } from '@/lib/analytics';
@@ -189,14 +189,6 @@ export default function OffersStep() {
       </div>
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          onClick={() => router.push('/apply/pan')}
-          className={`btn btn--ghost ${styles.backBtn}`}
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
         <button
           type="button"
           className="btn btn--cta"

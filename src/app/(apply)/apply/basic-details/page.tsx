@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft } from 'lucide-react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { step2Schema, Step2FormData } from '@/lib/validations';
 import { applicationService } from '@/lib/services';
+import { PincodeInput } from '@/components/ui/PincodeInput/PincodeInput';
+import type { PincodeLookupState } from '@/hooks/usePincodeLookup';
 import styles from './page.module.css';
 
 export default function BasicDetailsStep() {
@@ -24,9 +25,18 @@ export default function BasicDetailsStep() {
     }
   }, [applicationData.mobile, applicationData.otpVerified, router]);
 
+  // Async PIN verification lives outside RHF (the schema only checks format);
+  // this holds the India Post result so we can show the location and block
+  // submission on a confirmed-invalid PIN.
+  const [pinResult, setPinResult] = useState<PincodeLookupState>({
+    status: 'idle',
+    location: null,
+  });
+
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<Step2FormData>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,19 +48,38 @@ export default function BasicDetailsStep() {
     },
   });
 
+  // Block progress while the PIN is still verifying or confirmed invalid. A
+  // network error is deliberately NOT blocking — the format is already valid, so
+  // an India Post outage shouldn't strand the applicant.
+  const pinBlocksSubmit =
+    pinResult.status === 'loading' || pinResult.status === 'invalid';
+
   const onSubmit = async (data: Step2FormData) => {
+    if (pinBlocksSubmit) return;
+
     updateData({
       loanAmount: data.loanAmount,
       email: data.email,
       pinCode: data.pinCode,
+      // Client-only enrichment — persisted in the store/sessionStorage, not sent
+      // to the draft-save API (which has no columns for it).
+      district: pinResult.location?.district ?? '',
+      state: pinResult.location?.state ?? '',
+      city: pinResult.location?.city ?? '',
     });
+    // Persist the draft in the background so the step change is instant — we
+    // don't block navigation on the network round-trip. The final submit on the
+    // success page resends the full dataset, so a slow/failed draft-save here
+    // never loses data.
     if (applicationData.referenceId) {
-      await applicationService.updateApplication(applicationData.referenceId, {
-        loanAmount: data.loanAmount,
-        email: data.email,
-        pinCode: data.pinCode,
-        currentStep: 'basic_details',
-      });
+      void applicationService
+        .updateApplication(applicationData.referenceId, {
+          loanAmount: data.loanAmount,
+          email: data.email,
+          pinCode: data.pinCode,
+          currentStep: 'basic_details',
+        })
+        .catch(() => {});
     }
     router.push('/apply/employment');
   };
@@ -61,15 +90,10 @@ export default function BasicDetailsStep() {
 
   return (
     <div className={styles.container}>
+      {/* No back control on the first post-OTP step: the only route back is the
+          OTP screen, which is a sealed checkpoint (resend burns another SMS and
+          the confirmation session is already spent → "Session expired"). */}
       <div className={styles.mobileTop}>
-        <button
-          type="button"
-          onClick={() => router.push('/apply')}
-          className={styles.backIconBtn}
-          aria-label="Go back"
-        >
-          <ArrowLeft size={20} />
-        </button>
         <div className={styles.progressRow}>
           <div className={styles.progressTrack}>
             <span className={`${styles.seg} ${styles.segOn}`} />
@@ -128,41 +152,27 @@ export default function BasicDetailsStep() {
             )}
           </div>
 
-          {/* Current Address PIN Code */}
-          <div className="form-group">
-            <label htmlFor="pinCode" className="form-label">
-              Current Address PIN Code
-            </label>
-            <input
-              id="pinCode"
-              type="text"
-              inputMode="numeric"
-              placeholder="Enter PIN Code"
-              maxLength={6}
-              className={`form-input ${errors.pinCode ? 'error' : ''}`}
-              aria-invalid={errors.pinCode ? true : undefined}
-              aria-describedby={errors.pinCode ? 'pinCode-error' : undefined}
-              {...register('pinCode')}
-            />
-            {errors.pinCode && (
-              <p id="pinCode-error" role="alert" className={styles.errorText}>{errors.pinCode.message}</p>
+          {/* Current Address PIN Code — auto-detects District, State */}
+          <Controller
+            name="pinCode"
+            control={control}
+            render={({ field }) => (
+              <PincodeInput
+                id="pinCode"
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                onResult={setPinResult}
+                error={errors.pinCode?.message}
+              />
             )}
-          </div>
+          />
         </div>
 
         <div className={styles.actions}>
           <button
-            type="button"
-            onClick={() => router.push('/apply')}
-            className={`btn btn--ghost ${styles.backBtn}`}
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
-          <button
             type="submit"
             className="btn btn--cta"
-            disabled={isSubmitting}
+            disabled={isSubmitting || pinBlocksSubmit}
           >
             {isSubmitting ? 'Saving...' : 'Save & Continue'}
           </button>

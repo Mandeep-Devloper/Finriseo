@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local notes / scratch (not for GitHub)
 /finriseowork/
+
+# Bulk pincode dataset (re-downloaded by scripts/import-pincodes.mjs if missing)
+/prisma/data/*.csv

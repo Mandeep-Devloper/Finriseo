@@ -25,13 +25,16 @@ export function AnimatedCounter({ target, duration = 2, prefix = '', suffix = ''
       const progress = Math.min((now - startTime) / (endTime - startTime), 1);
       // Easing: ease-out-expo
       const eased = 1 - Math.pow(1 - progress, 4);
-      setCount(Math.floor(eased * target));
+      const raw = eased * target;
+      // Keep fractional precision while counting decimal stats (e.g. 4.8);
+      // integer stats still tick as whole numbers.
+      setCount(decimals > 0 ? raw : Math.floor(raw));
       if (progress < 1) requestAnimationFrame(tick);
       else setCount(target);
     };
 
     requestAnimationFrame(tick);
-  }, [isInView, target, duration]);
+  }, [isInView, target, duration, decimals]);
 
   return (
     <span ref={ref}>

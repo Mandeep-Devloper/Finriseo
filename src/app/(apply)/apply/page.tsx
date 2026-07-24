@@ -472,15 +472,6 @@ export default function BasicInfoStep() {
           </div>
         </div>
       )}
-
-      {/* Required reCAPTCHA attribution: the floating badge is hidden via CSS
-          (.grecaptcha-badge in globals.css), which Google permits only if this
-          notice is shown in the flow instead. Do not remove one without the other. */}
-      <p className={styles.recaptchaNotice}>
-        This site is protected by reCAPTCHA and the Google{' '}
-        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and{' '}
-        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
-      </p>
     </div>
   );
 }
