@@ -60,8 +60,14 @@ export async function POST(req: NextRequest) {
 
     const result = schema.safeParse(raw);
     if (!result.success) {
+      // Surface WHICH fields failed (field names only — never their values, so no
+      // PII leaks) so a 400 is diagnosable instead of an opaque "Invalid data".
+      const fields = Array.from(
+        new Set(result.error.issues.map((i) => i.path.join('.') || '(root)'))
+      );
+      console.warn('[application-submit] validation failed for fields:', fields);
       return NextResponse.json(
-        { success: false, error: 'Invalid data' },
+        { success: false, error: 'Invalid data', fields },
         { status: 400 }
       );
     }
