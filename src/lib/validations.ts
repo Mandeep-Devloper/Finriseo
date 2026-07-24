@@ -104,6 +104,13 @@ export const applicationPatchSchema = z.object({
   loanPurpose: z.string().trim().max(100).optional(),
   panNumber: pan.optional(),
   currentStep: z.string().max(50).optional(),
+  // ── Magic Resume progress fields (progressive save) ──
+  currentRoute: z.string().max(120).optional(),
+  progressPct: z.number().int().min(0).max(100).optional(),
+  completedSteps: z.array(z.string().max(50)).max(20).optional(),
+  // Non-sensitive funnel snapshot for full restore. PAN is never included by the
+  // client; the route additionally strips it defensively (see PATCH handler).
+  draftData: z.record(z.string(), z.unknown()).optional(),
 });
 
 // POST /api/application/offers
