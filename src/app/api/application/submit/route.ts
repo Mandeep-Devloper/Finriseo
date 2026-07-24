@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { getClientIp } from '@/lib/http/ip';
 import { encryptPii } from '@/lib/crypto/pii';
 import { checkIpRateLimit, checkPhoneRateLimit, maskPhone } from '@/app/api/otp/_otpStore';
-import { requireSession, unauthorized, SessionError } from '@/lib/auth/session';
+import { requireSession, requireDraftAccess, unauthorized, SessionError } from '@/lib/auth/session';
+import { revokeTrustedSession } from '@/lib/auth/trustedSession';
 import { reportServerError, serverError } from '@/lib/http/errors';
 import { recordAudit } from '@/lib/services/auditLog';
 import { resolveSubmission } from '@/lib/services/eligibility';
@@ -13,10 +14,27 @@ import { headers } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireSession();
-
     const headersList = await headers();
     const ip = getClientIp(headersList);
+
+    // Peek referenceId to choose the auth path (schema validation happens below).
+    const raw = await req.json();
+    const refId: string | undefined = typeof raw?.referenceId === 'string' ? raw.referenceId : undefined;
+
+    // A submit that targets an existing draft may be authorized by the trusted
+    // session (zero-friction finish on resume). A submit with NO draft to attach
+    // to must present a real Firebase session.
+    let ownerMobile: string;
+    let actorUid: string | undefined;
+    if (refId) {
+      const access = await requireDraftAccess(headersList, refId);
+      ownerMobile = access.mobile;
+      actorUid = access.uid;
+    } else {
+      const session = await requireSession();
+      ownerMobile = session.phone;
+      actorUid = session.uid;
+    }
 
     const ipCheck = await checkIpRateLimit(ip, 5, 60, 'submit'); // 5 submits per hour per IP
     if (!ipCheck.allowed) {
@@ -29,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const phoneCheck = await checkPhoneRateLimit(session.phone, 5, 60, 'submit'); // 5 per hour per phone
+    const phoneCheck = await checkPhoneRateLimit(ownerMobile, 5, 60, 'submit'); // 5 per hour per phone
     if (!phoneCheck.allowed) {
       return NextResponse.json(
         {
@@ -40,8 +58,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const result = schema.safeParse(body);
+    const result = schema.safeParse(raw);
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: 'Invalid data' },
@@ -50,8 +67,8 @@ export async function POST(req: NextRequest) {
     }
     const d = result.data;
 
-    // The owner is the session, never the posted mobile.
-    if (d.mobile !== session.phone) {
+    // The owner is the authorized session, never the posted mobile.
+    if (d.mobile !== ownerMobile) {
       return unauthorized();
     }
 
@@ -95,7 +112,7 @@ export async function POST(req: NextRequest) {
       : null;
 
     // Refuse to overwrite a draft the session doesn't own.
-    if (existing && existing.mobile !== session.phone) {
+    if (existing && existing.mobile !== ownerMobile) {
       return NextResponse.json({ success: false, error: 'Application not found' }, { status: 404 });
     }
 
@@ -109,12 +126,16 @@ export async function POST(req: NextRequest) {
 
     void recordAudit({
       referenceId: referenceId!,
-      actorUid: session.uid,
+      actorUid,
       action: 'submitted',
       lender: resolved.selectedOfferId != null ? String(resolved.selectedOfferId) : undefined,
     });
 
-    console.log(`[APPLICATION] ${referenceId} | Mobile: ${maskPhone(session.phone)}`);
+    // The draft is now submitted — retire the trusted session so the 7-day cookie
+    // can never re-open a completed application.
+    await revokeTrustedSession();
+
+    console.log(`[APPLICATION] ${referenceId} | Mobile: ${maskPhone(ownerMobile)}`);
     return NextResponse.json({
       success: true,
       referenceId,
