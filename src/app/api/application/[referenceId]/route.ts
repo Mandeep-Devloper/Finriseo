@@ -10,6 +10,11 @@ import { checkDualRateLimit } from '@/app/api/otp/_otpStore';
 import { applicationPatchSchema as schema } from '@/lib/validations';
 import type { Prisma } from '@prisma/client';
 
+// Upper bound on the serialized draftData snapshot. It only ever holds a handful
+// of short, non-sensitive funnel fields, so 8 KB is generous headroom; anything
+// past that is abuse (an authorized draft holder bloating the row), not state.
+const MAX_DRAFT_DATA_BYTES = 8 * 1024;
+
 // Progressive save — called after each apply step (and on field blur / debounced
 // edits) so the draft is durable and resumable, not only saved at final submit.
 export async function PATCH(
@@ -61,6 +66,15 @@ export async function PATCH(
       // Defensive: PAN must never live in the resumable snapshot.
       const clean = { ...draftData };
       delete (clean as Record<string, unknown>).panNumber;
+      // Bound the snapshot size so an authorized draft holder can't bloat the
+      // row with arbitrary JSON (the schema caps individual fields but not the
+      // whole object).
+      if (JSON.stringify(clean).length > MAX_DRAFT_DATA_BYTES) {
+        return NextResponse.json(
+          { success: false, error: 'Draft snapshot too large' },
+          { status: 413 }
+        );
+      }
       data.draftData = clean as Prisma.InputJsonValue;
     }
     // Any PATCH is activity — refresh the resume clock.

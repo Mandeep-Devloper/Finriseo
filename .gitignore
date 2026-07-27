@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but DO track the placeholder template so a fresh clone / CI knows which
+# vars to set. It contains only empty/placeholder values, never real secrets.
+!.env.example
 
 # vercel
 .vercel

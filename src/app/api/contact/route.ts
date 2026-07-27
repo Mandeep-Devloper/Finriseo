@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getClientIp } from '@/lib/http/ip';
 import { reportServerError, serverError } from '@/lib/http/errors';
@@ -24,9 +23,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    
+
     // Server-side validation
-    const validatedData = contactSchema.parse(body);
+    const result = contactSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid input parameters' },
+        { status: 400 }
+      );
+    }
+    const validatedData = result.data;
 
     await db.contactMessage.create({
       data: {
@@ -40,12 +46,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid input parameters' },
-        { status: 400 }
-      );
-    }
     await reportServerError('contact', error);
     return serverError();
   }
