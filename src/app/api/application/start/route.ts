@@ -89,6 +89,13 @@ export async function POST(req: NextRequest) {
     }
 
     const newReferenceId = generateReferenceId();
+
+    // Look for previous draft(s) for this phone to restore form data
+    const previousDraft = await db.application.findFirst({
+      where: { mobile: session.phone, status: 'draft' },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const created = await db.application.create({
       data: {
         referenceId: newReferenceId,
@@ -104,6 +111,18 @@ export async function POST(req: NextRequest) {
         // absolute cap so a resumable draft always outlives its trusted session).
         expiresAt: new Date(Date.now() + TRUSTED_ABSOLUTE_TTL_MS),
         source: 'web',
+        // Restore form data from previous draft if it exists
+        ...(previousDraft?.draftData ? { draftData: previousDraft.draftData } : {}),
+        // Restore other pre-filled fields from previous draft
+        ...(previousDraft?.email ? { email: previousDraft.email } : {}),
+        ...(previousDraft?.pinCode ? { pinCode: previousDraft.pinCode } : {}),
+        ...(previousDraft?.employmentType ? { employmentType: previousDraft.employmentType } : {}),
+        ...(previousDraft?.monthlyIncome ? { monthlyIncome: previousDraft.monthlyIncome } : {}),
+        ...(previousDraft?.salaryMode ? { salaryMode: previousDraft.salaryMode } : {}),
+        ...(previousDraft?.employer ? { employer: previousDraft.employer } : {}),
+        ...(previousDraft?.experience ? { experience: previousDraft.experience } : {}),
+        ...(previousDraft?.loanAmount ? { loanAmount: previousDraft.loanAmount } : {}),
+        ...(previousDraft?.loanPurpose ? { loanPurpose: previousDraft.loanPurpose } : {}),
         ...consent_,
         ...whatsapp_,
       },

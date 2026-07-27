@@ -9,7 +9,7 @@ import { db } from '@/lib/db';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Draft applications with no activity for this long are abandoned leads → purge. */
-export const STALE_DRAFT_DAYS = 90;
+export const STALE_DRAFT_DAYS = 3;
 /** OtpLog is operational only; nothing needs it past this. */
 export const OTP_LOG_DAYS = 90;
 /** Keep revoked trusted sessions briefly for audit, then remove. */
