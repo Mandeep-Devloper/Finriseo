@@ -4,12 +4,30 @@ interface ApiResponse<T = unknown> {
   status: number;
 }
 
+/**
+ * The frontend/backend cutover switch (CLAUDE.md §6.9 — incremental, reversible).
+ *
+ * Unset/empty  → `${''}/api/otp/verify` is a relative path, so the browser hits
+ *                the Next.js route handlers in src/app/api/** exactly as before.
+ *                This is the fallback and the default; nothing changes.
+ * Set to e.g.  → absolute URL against the standalone Express service. Its routers
+ * :4000          are mounted under the same /api/* paths, so the endpoint strings
+ *                below never change — only where they resolve to.
+ *
+ * Reverting is removing the env var. There is no second code path to delete.
+ */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      // Required once API_BASE_URL is cross-origin: the session cookies are
+      // httpOnly and first-party, and fetch drops them by default off-origin.
+      // Harmless on the relative path (equivalent to the browser default).
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,

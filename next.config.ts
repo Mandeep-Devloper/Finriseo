@@ -14,6 +14,14 @@ import type { NextConfig } from 'next';
 //     snippets; removing 'unsafe-inline' here would break hydration and the OTP
 //     flow. Moving to a nonce/hash-based policy needs middleware-based nonce
 //     propagation (a larger change) and is tracked as a follow-up.
+// Backend cutover switch (CLAUDE.md §6.9). When NEXT_PUBLIC_API_URL is set, the
+// browser's API calls leave this origin, and `connect-src 'self'` would block
+// them before they ever reach the network. Read from the SAME env var as
+// apiClient.ts so the allowance exists only while the switch is thrown: unset it
+// and this policy string is byte-identical to what it was before. An explicit
+// single origin, never a wildcard — §7.4 still applies to the relaxed form.
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
+
 const ContentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'
@@ -25,7 +33,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline';
   font-src 'self';
   img-src 'self' data: blob: https://www.google-analytics.com;
-  connect-src 'self'
+  connect-src 'self' ${API_ORIGIN}
     https://www.google-analytics.com
     https://analytics.google.com
     https://identitytoolkit.googleapis.com

@@ -368,6 +368,33 @@ route change in the same PR.
 
 Status: **planned, not started.** Nothing below happens without an explicit task.
 
+### Target layout & hosting decisions
+
+Target monorepo folder layout:
+
+```
+finriseo/
+├── apps/
+│   ├── web/          → Next.js frontend, stays on Vercel (bom1)
+│   └── api/          → standalone Node.js service (Fastify), India-region host
+├── packages/
+│   ├── db/            → Prisma schema + client, shared by web (until cutover) and api
+│   └── shared/        → Zod schemas, types, error shapes — zero Next.js imports, zero server-only imports
+├── package.json        → npm workspaces
+└── turbo.json
+```
+
+Hosting decisions:
+- Backend host must be an India region (Cloud Run `asia-south1` or DigitalOcean
+  Bangalore) — co-located with the database, not Singapore/US, per RBI Digital
+  Lending Directions data-localization requirements.
+- Database stays Supabase (Mumbai). Do not migrate to Neon — Neon has no India
+  region as of 2026.
+- A Redis instance is added at the same phase as the backend cutover, for:
+  rate-limit backing (already DB-backed per §3.11, this is additive), a job queue
+  (BullMQ) for NBFC submission calls and notifications, and general caching. This
+  lives in `apps/api`, not `apps/web`.
+
 **Principles when it does happen**
 1. **Contract first.** Freeze the current API surface (`src/app/api/**`) as the
    contract. The split must be behaviour-identical on day one — same paths, same
@@ -384,6 +411,10 @@ Status: **planned, not started.** Nothing below happens without an explicit task
    same registrable domain (e.g. `api.finriseo.com` with a domain-scoped cookie) or
    proxy through Next. **Do not** move sessions to `localStorage` tokens to make
    CORS easier — that trades an XSS-proof store for an XSS-readable one.
+   Once mobile apps are on the roadmap, `apps/api` must also accept a Firebase ID
+   token via an `Authorization` header as an alternative to the session cookie, so
+   the same endpoints serve both web and mobile without a second auth path being
+   bolted on later.
 5. **CORS is an allowlist**, credentialed, exact origins only. Never `*` with
    credentials, never reflect `Origin`.
 6. **Once the API is cross-origin, `SameSite` stops being CSRF protection.** Add
@@ -399,6 +430,9 @@ Status: **planned, not started.** Nothing below happens without an explicit task
 10. **Move `middleware.ts` logic carefully:** it is a UX redirect layer. The Node
     service must still perform its own full verification — it always did, so nothing
     is lost, but nothing may be assumed either.
+
+See docs/MIGRATION-PLAN.md for the phase-by-phase execution order and per-phase
+definition of done.
 
 ---
 
